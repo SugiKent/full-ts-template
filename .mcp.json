@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "dev3000": {
+      "type": "http",
+      "url": "http://localhost:3684/api/mcp/mcp"
+    },
+    "playwright-test": {
+      "command": "npx",
+      "args": [
+        "playwright",
+        "run-test-mcp-server"
+      ]
+    }
+  }
+}

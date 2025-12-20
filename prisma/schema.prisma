@@ -1,0 +1,104 @@
+// ========================================
+// Prisma Schema
+// Full-Stack TypeScript Template
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// 認証テーブル (Better Auth 標準)
+// ========================================
+
+// ユーザーアカウント (Better Auth の User テーブル)
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // カスタムフィールド: ロール（複数role対応）
+  // 必要に応じてロール値を追加・変更してください
+  // 例: 'admin' | 'user' | 'moderator'
+  role String @default("user")
+
+  // Better Auth 標準リレーション
+  sessions Session[]
+  accounts Account[]
+}
+
+// セッション (Better Auth 標準)
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// OAuth連携アカウント (Better Auth 標準)
+model Account {
+  id           String    @id @default(cuid())
+  userId       String
+  accountId    String // Better Auth標準フィールド
+  providerId   String // Better Auth標準フィールド
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String? // Email/パスワード認証用
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+// Verification (Better Auth 標準 - メール認証用)
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+}
+
+// ========================================
+// アプリケーション固有のテーブルをここに追加
+// ========================================
+
+// 例:
+// model Post {
+//   id        String   @id @default(cuid())
+//   title     String
+//   content   String   @db.Text
+//   published Boolean  @default(false)
+//   authorId  String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//
+//   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+//
+//   @@index([authorId])
+// }

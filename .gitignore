@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.test
+
+# Build outputs
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+junit.xml
+test-results.json
+/playwright/.cache/
+/blob-report/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Prisma
+prisma/migrations/dev/
+prisma/*.db
+prisma/*.db-journal
+
+# Docker
+docker/postgres/data/
+docker/redis/data/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Azure
+*.azureconfig
+.azure/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Package manager
+.yarn/
+.npm/
+
+# TypeScript cache
+*.tscache
+
+# Next.js (if added later)
+.next/
+out/
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

@@ -1,0 +1,365 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-and-lint:
+    name: Type Check & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run type check
+        run: pnpm typecheck
+
+      - name: Run Biome check
+        run: pnpm lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.test
+          echo "DATABASE_URL=postgresql://test_user:test_pass@localhost:5432/test_db" >> .env.test
+          echo "REDIS_URL=redis://localhost:6379" >> .env.test
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run database migrations
+        run: pnpm db:push
+        env:
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed: dist directory not found"
+            exit 1
+          fi
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run database migrations
+        run: pnpm db:push
+        env:
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Start server in background
+        run: |
+          nohup pnpm start > server.log 2>&1 &
+          echo $! > server.pid
+          sleep 2
+        env:
+          NODE_ENV: test
+          PORT: 8080
+          HOST: 0.0.0.0
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          REDIS_TTL: 86400
+          SESSION_SECRET: test_session_secret_minimum_32_characters_long_for_testing
+          SESSION_MAX_AGE: 86400000
+          API_RATE_LIMIT_MAX: 100
+          API_RATE_LIMIT_WINDOW: 900000
+          CORS_ORIGIN: http://localhost:5173,http://localhost:8080
+          CORS_CREDENTIALS: true
+          LOG_LEVEL: info
+          LOG_PRETTY: false
+          JWT_SECRET: test_jwt_secret_minimum_32_characters_long_for_testing_purposes
+          JWT_EXPIRES_IN: 7d
+          JWT_REFRESH_SECRET: test_jwt_refresh_secret_minimum_32_characters_long_testing
+          JWT_REFRESH_EXPIRES_IN: 30d
+          ENABLE_SWAGGER_DOCS: false
+          ENABLE_METRICS: false
+          ENABLE_HEALTH_CHECK: true
+
+      - name: Wait for server to be ready
+        run: |
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/health 2>/dev/null; then
+              echo "Server is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Server not ready yet, waiting..."
+            sleep 2
+          done
+          echo "Server failed to start within timeout"
+          cat server.log
+          exit 1
+
+      - name: Seed database
+        run: pnpm db:seed
+        env:
+          CI: 'true'
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          PORT: 8080
+          HOST: 0.0.0.0
+          SESSION_SECRET: test_session_secret_minimum_32_characters_long_for_testing
+          JWT_SECRET: test_jwt_secret_minimum_32_characters_long_for_testing_purposes
+
+      - name: Run Playwright tests
+        run: pnpm test:e2e
+        env:
+          CI: 'true'
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          PORT: 8080
+          HOST: 0.0.0.0
+          BASE_URL: http://localhost:5173
+          VITE_API_BASE_URL: http://localhost:8080
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Display server logs
+        if: always()
+        run: |
+          if [ -f server.log ]; then
+            echo "=== Server Logs ==="
+            cat server.log
+          fi
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 30

@@ -1,0 +1,95 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ESNext", // 最新のECMAScript機能を使用
+    "lib": ["ESNext", "DOM", "DOM.Iterable"], // 利用可能なライブラリ定義
+    "jsx": "react-jsx", // React 19のJSX変換
+    "moduleDetection": "force", // すべてのファイルをモジュールとして扱う
+
+    /* Modules */
+    "module": "ESNext", // 最新のECMAScriptモジュール
+    "moduleResolution": "Bundler", // Vite/Bundler用のモジュール解決
+    "resolveJsonModule": true, // JSONファイルのインポート
+    "allowImportingTsExtensions": false, // 拡張子なしインポート
+    "customConditions": ["development"], // 開発環境用の条件
+
+    /* JavaScript Support */
+    "allowJs": true, // JavaScriptファイルの処理
+    "checkJs": false, // JavaScriptファイルの型チェック
+
+    /* Emit */
+    "noEmit": true, // Node.js直接実行のため出力なし
+    "declaration": false, // 型定義ファイル生成なし
+    "declarationMap": false, // 宣言マップ生成なし
+    "sourceMap": true, // ソースマップ生成
+    "removeComments": false, // コメント保持
+
+    /* Interop Constraints */
+    "isolatedModules": true, // 単一ファイルトランスパイル対応
+    "verbatimModuleSyntax": false, // Bundler環境では無効化
+    "allowSyntheticDefaultImports": true, // デフォルトインポート許可
+    "esModuleInterop": true, // CommonJSモジュール互換性
+    "forceConsistentCasingInFileNames": true, // ファイル名の大文字小文字を厳密に
+
+    /* Type Checking - Strict Mode */
+    "strict": true, // 厳密な型チェック有効
+    "noImplicitAny": true, // 暗黙のany禁止
+    "strictNullChecks": true, // null/undefinedチェック
+    "strictFunctionTypes": true, // 関数型の厳密チェック
+    "strictBindCallApply": true, // bind/call/applyの厳密チェック
+    "strictPropertyInitialization": true, // プロパティ初期化チェック
+    "noImplicitThis": true, // 暗黙のthis禁止
+    "useUnknownInCatchVariables": true, // catch変数をunknown型に
+    "alwaysStrict": true, // strictモード強制
+
+    /* Additional Type Checks */
+    "noUnusedLocals": true, // 未使用ローカル変数エラー
+    "noUnusedParameters": true, // 未使用パラメータエラー
+    "exactOptionalPropertyTypes": true, // オプショナルプロパティの厳密型
+    "noImplicitReturns": true, // 暗黙のreturn禁止
+    "noFallthroughCasesInSwitch": true, // switch文のフォールスルー禁止
+    "noUncheckedIndexedAccess": true, // インデックスアクセスの厳密チェック
+    "noImplicitOverride": true, // overrideキーワード必須
+    "noPropertyAccessFromIndexSignature": false, // process.envなどのドット記法を許可
+    "allowUnusedLabels": false, // 未使用ラベル禁止
+    "allowUnreachableCode": false, // 到達不可能コード禁止
+
+    /* Completeness */
+    "skipLibCheck": true, // 型定義ファイルのチェックスキップ
+
+    /* Path Mapping */
+    "baseUrl": "./", // ベースディレクトリ
+    "paths": {
+      "@/*": ["./src/*"], // srcディレクトリのエイリアス
+      "@server/*": ["./src/server/*"],
+      "@client/*": ["./src/client/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@contracts/*": ["./src/server/contracts/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "scripts/**/*.ts",
+    "prisma/**/*.ts",
+    "vitest.config.ts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".pnpm",
+    "coverage",
+    ".vite",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  "ts-node": {
+    // Node.js 24では不要だが、互換性のため残す
+    "experimentalResolver": true,
+    "esm": true
+  }
+}
