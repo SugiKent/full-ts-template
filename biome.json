@@ -1,5 +1,16 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+  "files": {
+    "includes": [
+      "src/**",
+      "tests/**",
+      "prisma/**",
+      "customLinter/**",
+      "og-images/**",
+      "*.config.*",
+      "*.json"
+    ]
+  },
   "vcs": {
     "enabled": true,
     "clientKind": "git",

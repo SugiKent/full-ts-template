@@ -2,14 +2,39 @@
  * メール送信サービス
  *
  * 開発環境: Nodemailer + Mailpit (docker-compose)
- * 本番環境: TODO - SendGrid, AWS SES, Resend 等に置き換え
+ * 本番環境: Resend (RESEND_API_KEY が設定されている場合)
  */
 
 import type { Transporter } from 'nodemailer'
 import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import { createLogger } from '../utils/logger'
 
 const logger = createLogger('email-service')
+
+// Resendクライアント（本番環境用）
+let resendClient: Resend | null = null
+
+/**
+ * Resendが有効かどうかを判定
+ */
+function isResendEnabled(): boolean {
+  return !!process.env.RESEND_API_KEY
+}
+
+/**
+ * Resendクライアントを取得
+ */
+function getResendClient(): Resend {
+  if (!resendClient && process.env.RESEND_API_KEY) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+    logger.info('Resend client initialized')
+  }
+  if (!resendClient) {
+    throw new Error('Resend API key not configured')
+  }
+  return resendClient
+}
 
 // メール設定
 const emailConfig = {
@@ -68,33 +93,65 @@ interface SendEmailOptions {
 
 /**
  * メールを送信
+ *
+ * RESEND_API_KEY が設定されている場合は Resend を使用し、
+ * それ以外の場合は Nodemailer (Mailpit) を使用する
  */
 export async function sendEmail(options: SendEmailOptions): Promise<void> {
   const { to, subject, text, html } = options
 
   try {
-    const transport = getTransporter()
+    if (isResendEnabled()) {
+      // Resend を使用（本番環境）
+      const resend = getResendClient()
 
-    const result = await transport.sendMail({
-      from: `"${emailConfig.from.name}" <${emailConfig.from.address}>`,
-      to,
-      subject,
-      text,
-      html,
-    })
-
-    logger.info(
-      {
+      const result = await resend.emails.send({
+        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
         to,
         subject,
-        messageId: result.messageId,
-      },
-      'Email sent successfully',
-    )
+        text: text ?? '',
+        html: html ?? '',
+      })
 
-    // 開発環境での確認用
-    if (process.env.NODE_ENV !== 'production') {
-      logger.info('📧 Mailpit で確認: http://localhost:8025')
+      if (result.error) {
+        throw new Error(result.error.message)
+      }
+
+      logger.info(
+        {
+          to,
+          subject,
+          messageId: result.data?.id,
+          provider: 'resend',
+        },
+        'Email sent successfully via Resend',
+      )
+    } else {
+      // Nodemailer を使用（開発環境）
+      const transport = getTransporter()
+
+      const result = await transport.sendMail({
+        from: `"${emailConfig.from.name}" <${emailConfig.from.address}>`,
+        to,
+        subject,
+        text,
+        html,
+      })
+
+      logger.info(
+        {
+          to,
+          subject,
+          messageId: result.messageId,
+          provider: 'nodemailer',
+        },
+        'Email sent successfully via Nodemailer',
+      )
+
+      // 開発環境での確認用
+      if (process.env.NODE_ENV !== 'production') {
+        logger.info('📧 Mailpit で確認: http://localhost:8025')
+      }
     }
   } catch (error) {
     logger.error(

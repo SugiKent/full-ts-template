@@ -63,3 +63,32 @@ export function createFastifyLoggerOptions(): LoggerOptions {
  * デフォルトのロガーインスタンス
  */
 export const logger = createLogger('app')
+
+/**
+ * レイヤー別ロガーインスタンスを作成する
+ *
+ * @param layer - レイヤー名 (repository, service, procedure, etc.)
+ * @param module - モジュール名
+ * @returns Pinoロガーインスタンス
+ */
+export function createLayerLogger(layer: string, module: string): pino.Logger {
+  return createLogger(`${layer}:${module}`)
+}
+
+/**
+ * エラーをシリアライズ可能な形式に変換する
+ *
+ * @param error - エラーオブジェクト
+ * @returns シリアライズ可能なエラー情報
+ */
+export function serializeError(error: unknown): { message: string; name?: string; stack?: string } {
+  if (error instanceof Error) {
+    const result: { message: string; name?: string; stack?: string } = {
+      message: error.message,
+    }
+    if (error.name) result.name = error.name
+    if (error.stack) result.stack = error.stack
+    return result
+  }
+  return { message: String(error) }
+}

@@ -14,6 +14,7 @@
 4. [状態管理](#4-状態管理)
 5. [パフォーマンス最適化](#5-パフォーマンス最適化)
 6. [テスト](#6-テスト)
+7. [多言語対応（i18n）](#7-多言語対応i18n)
 
 ## 1. React 19新機能パターン
 
@@ -625,6 +626,200 @@ it('useUser がユーザー情報を取得する', async () => {
 
 **詳細なテストパターン、モック戦略、ベストプラクティスは [TEST.md](./TEST.md) を参照してください。**
 
+## 7. 多言語対応（i18n）
+
+このプロジェクトは `react-i18next` を使用してi18n対応しています。
+
+### 7.1 言語設定
+
+**対応言語は `src/shared/config/i18n.ts` で一元管理されています。**
+
+```typescript
+// src/shared/config/i18n.ts
+export const SUPPORTED_LANGUAGES = ['ja'] as const  // 対応言語を変更する場合はここを編集
+export const I18N_NAMESPACES = ['common', 'auth'] as const  // namespaceを追加する場合はここを編集
+```
+
+新しい言語を追加する場合：
+1. `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` に言語コードを追加
+2. `src/client/locales/{言語コード}/` ディレクトリに翻訳ファイルを作成
+3. `src/client/i18n/index.ts` でリソースをimportして追加
+
+### 7.2 基本ルール
+
+1. **すべての UI テキストは翻訳キーを使用**（ハードコード禁止）
+2. 新しいテキスト追加時は **対応言語すべて** に翻訳を追加
+3. `pnpm run lint` でハードコードテキストと翻訳ファイルの整合性がチェックされる
+
+### 7.3 翻訳ファイルの構成
+
+```
+src/client/locales/
+├── {言語コード}/          # 言語ごとのディレクトリ
+│   ├── common.json        # 共通（ボタン、ラベル等）
+│   ├── auth.json          # 認証画面
+│   └── ...                # 他のnamespace
+```
+
+namespaceは `src/shared/config/i18n.ts` の `I18N_NAMESPACES` で定義されています。
+
+### 7.4 基本的な使い方
+
+```tsx
+// ✅ 正しい実装
+import { useTranslation } from 'react-i18next'
+
+function MyComponent() {
+  // namespace を指定（'user', 'common', 'auth', 'landing', 'analytics'）
+  const { t } = useTranslation('user')
+
+  return (
+    <div>
+      {/* 基本的な翻訳 */}
+      <h1>{t('nav.home')}</h1>
+      <button>{t('common.submit')}</button>
+
+      {/* プレースホルダー */}
+      <input placeholder={t('form.emailPlaceholder')} />
+
+      {/* 動的値の補間 */}
+      <p>{t('dropdown.userMenu', { name: user.name })}</p>
+
+      {/* 条件分岐 */}
+      <span>{isLoading ? t('common.loading') : t('common.ready')}</span>
+    </div>
+  )
+}
+
+// ❌ 禁止: ハードコードテキスト
+function BadComponent() {
+  return (
+    <div>
+      <h1>ホーム</h1>              {/* 日本語ハードコード */}
+      <button>Submit</button>       {/* 英語ハードコード */}
+      <p>Welcome to our app</p>     {/* 英語文章 */}
+    </div>
+  )
+}
+```
+
+### 7.5 翻訳キーの命名規則
+
+```json
+// src/client/locales/ja/user.json
+{
+  "nav": {
+    "home": "ホーム",
+    "projects": "プロジェクト",
+    "recentProjects": "最近のプロジェクト"
+  },
+  "dropdown": {
+    "userMenu": "{{name}}さんのメニュー"
+  },
+  "form": {
+    "emailPlaceholder": "メールアドレスを入力"
+  }
+}
+```
+
+**命名規則:**
+- ドット区切りの階層構造: `section.subsection.key`
+- 小文字 camelCase: `nav.recentProjects`
+- 動的値は `{{変数名}}`: `"userMenu": "{{name}}さんのメニュー"`
+- 複数形は別キー: `item` / `items`
+
+### 7.6 新しい翻訳を追加する手順
+
+1. **適切な namespace を選択**
+   - `src/shared/config/i18n.ts` の `I18N_NAMESPACES` を確認
+   - 新しいnamespaceが必要な場合は設定ファイルに追加
+
+2. **対応言語すべてに追加**
+   - `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` を確認
+   - 各言語の翻訳ファイルに同じキー構造で追加
+   ```bash
+   # 例: 日本語のみ対応の場合
+   src/client/locales/ja/{namespace}.json
+   ```
+
+3. **翻訳内容の例**
+   ```json
+   // ja/common.json
+   { "settings": { "title": "設定" } }
+   ```
+
+4. **lint で確認**
+   ```bash
+   pnpm run lint
+   ```
+
+### 7.7 複数 namespace の使用
+
+```tsx
+// 複数の namespace を使用する場合
+function ComplexComponent() {
+  const { t } = useTranslation('user')
+  const { t: tCommon } = useTranslation('common')
+
+  return (
+    <div>
+      <h1>{t('nav.home')}</h1>
+      <button>{tCommon('submit')}</button>
+    </div>
+  )
+}
+
+// または namespace を都度指定
+function AlternativeComponent() {
+  const { t } = useTranslation()
+
+  return (
+    <div>
+      <h1>{t('user:nav.home')}</h1>
+      <button>{t('common:submit')}</button>
+    </div>
+  )
+}
+```
+
+### 7.8 よくある間違いと対処
+
+```tsx
+// ❌ エラーメッセージのハードコード
+setError('入力が無効です')
+
+// ✅ 翻訳キーを使用
+setError(t('error.invalidInput'))
+
+// ❌ 三項演算子内のハードコード
+{isActive ? '有効' : '無効'}
+
+// ✅ 翻訳キーを使用
+{isActive ? t('status.active') : t('status.inactive')}
+
+// ❌ aria-label のハードコード
+<button aria-label="閉じる">×</button>
+
+// ✅ 翻訳キーを使用
+<button aria-label={t('common.close')}>×</button>
+```
+
+### 7.9 言語切り替え
+
+言語切り替えは `LanguageSwitcher` コンポーネントで提供されています。
+
+```tsx
+import { LanguageSwitcher } from '@/client/i18n/LanguageSwitcher'
+
+function Header() {
+  return (
+    <header>
+      <LanguageSwitcher />
+    </header>
+  )
+}
+```
+
 ---
 
 ## 変更履歴
@@ -632,6 +827,7 @@ it('useUser がユーザー情報を取得する', async () => {
 ### 2025年12月
 - ボイラープレートテンプレートとして初期化
 - 汎用的なブランドカラーに変更
+- 多言語対応（i18n）セクションを追加
 
 ### 2025年11月15日
 - ARCHITECTURE.mdから分離してFRONTEND.mdを作成

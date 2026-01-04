@@ -55,14 +55,15 @@
 ### 1.4 データストア
 - **PostgreSQL 16**: メインデータベース
 - **Redis 7.2**: セッションストア、キャッシュ
-- **Azure Blob Storage**: ファイル保存（オプション）
 
 ### 1.5 インフラストラクチャ
-- **Azure Web App Service**: Node.jsホスティング
-- **Azure Database for PostgreSQL**: マネージドDB
-- **Azure Cache for Redis**: マネージドキャッシュ
-- **Azure Application Insights**: 監視・ログ
-- **Azure Key Vault**: シークレット管理
+- **Railway**: メインホスティングプラットフォーム
+  - **Railway App Service**: Node.jsアプリケーションホスティング
+  - **Railway PostgreSQL**: マネージドDB（ワンクリックプロビジョニング）
+  - **Railway Redis**: マネージドキャッシュ
+  - **Railway Variables**: 環境変数・シークレット管理（Sealed Variables対応）
+  - **Railway Environments**: 本番/開発/PRプレビュー環境
+- **Pino + Betterstack/Axiom**: ログ収集・監視（オプション）
 - **Docker Compose**: ローカル開発環境
 
 ## 2. システムアーキテクチャ
@@ -76,7 +77,7 @@ graph TB
         ClientApp[クライアントアプリ<br/>Web/Mobile]
     end
 
-    subgraph "Azure Web App Service"
+    subgraph "Railway App Service"
         Fastify[Fastify Server<br/>Node.js 24.11.1]
 
         subgraph "エンドポイント"
@@ -90,7 +91,7 @@ graph TB
             Prisma[Prisma ORM]
         end
 
-        AI[Application Insights<br/>監視・ログ]
+        Logging[Pino Logger<br/>→ Betterstack/Axiom]
     end
 
     subgraph "管理者側"
@@ -99,10 +100,9 @@ graph TB
         ReactApp[React SPA<br/>管理画面]
     end
 
-    subgraph "Azure データ層"
-        PG[(Azure Database<br/>for PostgreSQL)]
-        Redis[(Azure Cache<br/>for Redis)]
-        Blob[(Azure Blob Storage<br/>ファイル)]
+    subgraph "Railway データ層"
+        PG[(Railway<br/>PostgreSQL)]
+        Redis[(Railway<br/>Redis)]
     end
 
     User --> ClientApp
@@ -120,8 +120,8 @@ graph TB
     Prisma --> PG
     Auth --> Redis
     Business --> Prisma
-    Business --> Blob
-    Fastify --> AI
+    Business --> Storage
+    Fastify --> Logging
 ```
 
 ### 2.2 レイヤードアーキテクチャ
@@ -155,9 +155,8 @@ graph TB
                     ↓
 ┌─────────────────────────────────────────┐
 │          Infrastructure Layer           │
-│  ・PostgreSQL                          │
-│  ・Redis                                │
-│  ・Azure Blob Storage                   │
+│  ・PostgreSQL (Railway)                 │
+│  ・Redis (Railway)                      │
 └─────────────────────────────────────────┘
 ```
 
@@ -296,11 +295,55 @@ chore: ビルド・ツール関連
 
 ## 5. 外部依存関係
 
-### 5.1 Azure Services
-- **Azure Web App Service**: アプリケーションホスティング
-- **Azure Blob Storage**: ファイル保存
-- **Azure Application Insights**: 監視・ログ収集
-- **Azure Key Vault**: シークレット管理
+### 5.1 Railway Services
+- **Railway App Service**: アプリケーションホスティング（ゼロコンフィグデプロイ）
+- **Railway PostgreSQL**: マネージドデータベース（ワンクリックプロビジョニング）
+- **Railway Redis**: マネージドキャッシュ
+- **Railway Variables**: 環境変数・シークレット管理
+  - Sealed Variables: 機密情報の暗号化保存（UIから閲覧不可）
+  - Reference Variables: サービス間での変数参照
+- **Railway Environments**: 本番/開発/PRプレビュー環境の自動管理
+- **Betterstack/Axiom**: ログ収集・監視（オプション）
+
+### 5.2 LLM Provider (OpenRouter)
+
+**OpenRouter SDK**を使用してLLM APIへのアクセスを提供します。
+
+#### 特徴
+- **300+モデル対応**: OpenAI、Anthropic、Google等の主要LLMにアクセス可能
+- **動的モデル切り替え**: 管理画面からシステム再起動なしでモデル変更
+- **キャッシュ最適化**: 5分間の設定キャッシュでパフォーマンス向上
+
+#### アーキテクチャ
+```
+┌─────────────────────────────────────┐
+│          管理画面                     │
+│  ・LLM設定ページ (/admin/settings)   │
+│  ・モデル選択、パラメータ調整         │
+└─────────────────────────────────────┘
+              ↓ oRPC
+┌─────────────────────────────────────┐
+│      LLMプロバイダーサービス          │
+│  ・sendChatRequest                  │
+│  ・sendChatRequestWithJsonResponse  │
+│  ・設定キャッシュ (5分TTL)           │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│         OpenRouter SDK              │
+│  ・@openrouter/sdk                  │
+│  ・API認証 (OPENROUTER_API_KEY)     │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│        SystemSetting (DB)           │
+│  ・llm.model                        │
+│  ・llm.maxTokens                    │
+│  ・llm.temperature                  │
+└─────────────────────────────────────┘
+```
+
+詳細な使用方法は **[BACKEND.md](./BACKEND.md)** の「7. LLMプロバイダーサービス」を参照してください。
 
 ## 6. 開発ツール
 
@@ -404,15 +447,34 @@ pnpm run test
 
 ### 8.2 データ保護
 - 個人情報の暗号化（保存時・通信時）
-- Azure Key Vaultによるシークレット管理
-- SSL/TLS通信の強制
+- Railway Sealed Variablesによるシークレット管理
+- SSL/TLS通信の強制（Railway自動HTTPS）
 - SQLインジェクション対策 (Prisma)
 
 ### 8.3 監査・ログ
-- Application Insightsによる集約ログ
+- Pino + Betterstack/Axiomによる集約ログ
 - アクセスログの記録
 - エラートラッキング
 - セキュリティイベントの監視
+
+### 8.4 エラー監視 (Sentry)
+
+**Sentry**を使用して、クライアント・サーバー両方のエラーをリアルタイムで監視します。
+
+#### 構成
+- **クライアント**: `@sentry/react` - React 19のエラーハンドリング統合
+- **サーバー**: `@sentry/node` - Fastifyエラーハンドラー統合
+
+#### 環境変数
+| 変数名 | 用途 | 説明 |
+|--------|------|------|
+| `SENTRY_DSN` | サーバー | Node.js/Fastify用DSN |
+| `VITE_SENTRY_DSN` | クライアント | React用DSN（Viteで公開） |
+
+#### 動作
+- **本番環境のみ**: 開発環境ではSentryへのエラー送信は無効化
+- **自動捕捉**: キャッチされないエラー、Reactコンポーネントエラー、APIエラーを自動収集
+- **トレース無効**: 初期設定ではパフォーマンストレースは無効（将来の拡張として検討）
 
 ## 9. パフォーマンス最適化
 
@@ -429,8 +491,7 @@ pnpm run test
 - 詳細は **[FRONTEND.md](./FRONTEND.md)** を参照
 
 ### 9.3 インフラ最適化
-- Azure CDNの活用
-- Auto-scaling設定
+- Railway Auto-scaling（Proプラン以上）
 - Database Indexing
 - Connection Pooling
 
@@ -483,9 +544,71 @@ cron.schedule(
 
 ### 10.3 監視・運用
 
-- **ログ監視**: Application Insightsでスケジューラーの実行状況を監視
+- **ログ監視**: Betterstack/Axiomでスケジューラーの実行状況を監視
 - **エラーアラート**: 連続失敗時のアラート設定
 - **メトリクス**: 成功数・失敗数・総数をログ出力
+
+## 11. Railway デプロイガイド
+
+### 11.1 初期セットアップ
+
+```bash
+# Railway CLIインストール
+npm install -g @railway/cli
+
+# ログイン
+railway login
+
+# プロジェクト作成
+railway init
+```
+
+### 11.2 サービス構成
+
+1. **アプリケーション**: GitHubリポジトリ連携で自動デプロイ
+2. **PostgreSQL**: プロジェクト内で「Add Plugin」→「PostgreSQL」
+3. **Redis**: プロジェクト内で「Add Plugin」→「Redis」
+
+### 11.3 環境変数設定
+
+```bash
+# 変数の設定（CLI）
+railway variables set DATABASE_URL="..."
+railway variables set REDIS_URL="..."
+
+# Reference Variables（railway.toml または UI）
+# 例: ${{Postgres.DATABASE_URL}}
+```
+
+### 11.4 本番デプロイ
+
+```bash
+# デプロイ（GitHubプッシュで自動実行される）
+railway up
+
+# ログ確認
+railway logs
+```
+
+### 11.5 設定ファイル (railway.toml)
+
+```toml
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node --experimental-transform-types src/server/index.ts"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+```
+
+### 11.6 重要な設定
+
+- **PORT**: Railwayが自動で`PORT`環境変数を設定（アプリはこれをlistenする）
+- **HOST**: `0.0.0.0`でlistenすること（localhost不可）
+- **DATABASE_URL/REDIS_URL**: Railwayが自動でプロビジョニング・設定
 
 ---
 
@@ -494,5 +617,7 @@ cron.schedule(
 ### 2025年12月
 - ボイラープレートテンプレートとして初期化
 - 汎用的なアプリケーション構成に変更
+- LLMプロバイダー（OpenRouter SDK統合）のアーキテクチャ追加
+- Azure からRailwayへのインフラ移行
 
 最終更新: 2025年12月

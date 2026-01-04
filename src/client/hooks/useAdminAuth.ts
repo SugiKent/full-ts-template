@@ -76,13 +76,16 @@ export function useAdminAuth() {
       setLoading(true)
 
       // Better Authのカスタムフィールド(role)を含めて登録
-      const result = await adminAuthClient.signUp.email({
-        email,
-        password,
-        name,
-        // @ts-expect-error - roleはサーバー側で設定されたカスタムフィールド
-        role: 'admin',
-      })
+      const result = await adminAuthClient.signUp.email(
+        {
+          email,
+          password,
+          name,
+        } as Parameters<typeof adminAuthClient.signUp.email>[0] & { role: 'admin' | 'user' },
+        {
+          body: { role: 'admin' as const },
+        },
+      )
 
       if (result.error) {
         setError(result.error.message || '登録に失敗しました')

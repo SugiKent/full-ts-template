@@ -1,0 +1,55 @@
+{
+  "appName": "Full-TS 模板",
+  "loading": "加载中...",
+  "error": "发生错误",
+  "submit": "提交",
+  "submitting": "提交中...",
+  "submitButton": "提交",
+  "cancel": "取消",
+  "save": "保存",
+  "delete": "删除",
+  "edit": "编辑",
+  "back": "返回",
+  "next": "下一步",
+  "confirm": "确认",
+  "close": "关闭",
+  "yes": "是",
+  "no": "否",
+  "language": "语言",
+  "selectLanguage": "选择语言",
+  "settings": "设置",
+  "logout": "退出登录",
+  "login": "登录",
+  "signup": "注册",
+  "detail": "详情",
+  "you": "您",
+  "operator": "客服",
+  "navigation": {
+    "home": "首页",
+    "contact": "联系我们"
+  },
+  "userIcon": "用户图标",
+  "role": {
+    "admin": "管理员",
+    "user": "用户"
+  },
+  "home": {
+    "title": "首页",
+    "welcome": "欢迎，{{name}}",
+    "accountInfo": "账户信息",
+    "feature1": "功能1",
+    "feature2": "功能2",
+    "feature3": "功能3"
+  },
+  "contact": {
+    "title": "联系我们",
+    "description": "如有任何问题或疑虑，请随时与我们联系",
+    "new": "新建咨询",
+    "history": "咨询历史",
+    "subjectPlaceholder": "请输入咨询主题",
+    "contentPlaceholder": "请详细描述您的问题",
+    "messagePlaceholder": "输入消息...",
+    "threadTitle": "咨询详情",
+    "threadDescription": "查看咨询详情"
+  }
+}

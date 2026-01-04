@@ -34,6 +34,9 @@ model User {
   // Better Auth 標準リレーション
   sessions Session[]
   accounts Account[]
+
+  // お問い合わせ関連リレーション
+  contactThreads ContactThread[]
 }
 
 // セッション (Better Auth 標準)
@@ -82,6 +85,46 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@unique([identifier, value])
+}
+
+// ========================================
+// お問い合わせ・サポート関連テーブル
+// ========================================
+
+// お問い合わせスレッド - ユーザーからのお問い合わせ
+model ContactThread {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String // technical, billing, feature_request, other
+  subject   String
+  status    String   @default("open") // open, in_progress, resolved, closed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ContactMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+// お問い合わせメッセージ - スレッド内の個別メッセージ
+model ContactMessage {
+  id         String   @id @default(cuid())
+  threadId   String
+  senderType String // user, admin
+  senderId   String? // userId (user) または null (admin/system)
+  content    String   @db.Text
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  thread ContactThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([senderType])
+  @@index([isRead])
 }
 
 // ========================================

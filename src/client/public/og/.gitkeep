@@ -1,0 +1,2 @@
+# OGP画像出力ディレクトリ
+# pnpm run generate:og で画像が生成されます

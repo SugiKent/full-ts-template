@@ -4,14 +4,22 @@
  * プロジェクトに応じてルートやスケジューラーを追加してください
  */
 
+// Sentry初期化は他のimportより先に行う（dotenvの後）
 import 'dotenv/config'
+import { initSentry, setupSentryFastifyErrorHandler } from './lib/sentry'
+
+initSentry()
+
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import cors from '@fastify/cors'
+import helmet from '@fastify/helmet'
+import rateLimit from '@fastify/rate-limit'
 import fastifyStatic from '@fastify/static'
 import Fastify from 'fastify'
 import adminAuthPlugin from './plugins/admin-auth'
 import adminRpcRoutes from './routes/admin/rpc.js'
+import userRpcRoutes from './routes/user/rpc.js'
 import { createFastifyLoggerOptions, createLogger } from './utils/logger'
 
 const logger = createLogger('fastify-server')
@@ -57,16 +65,45 @@ async function createServer() {
     credentials: process.env.CORS_CREDENTIALS === 'true',
   })
 
+  // セキュリティヘッダー（Helmet）
+  await fastify.register(helmet, { global: true })
+
+  // Rate limit（API ルートのみ）
+  await fastify.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    addHeaders: {
+      'x-ratelimit-limit': true,
+      'x-ratelimit-remaining': true,
+      'x-ratelimit-reset': true,
+    },
+    allowList: (request) => {
+      // 開発・テスト環境では rate limit をスキップ
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+        return true
+      }
+      // /api/* 以外のリクエストは rate limit をスキップ
+      const url = request.raw.url ?? ''
+      return !url.startsWith('/api/')
+    },
+    errorResponseBuilder: (_request, context) => ({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded, retry in ${context.after}`,
+    }),
+  })
+
+  // Sentry エラーハンドラー
+  setupSentryFastifyErrorHandler(fastify)
+
   // 管理画面認証プラグイン
   await fastify.register(adminAuthPlugin)
 
   // Admin API ルート（oRPC）
   await fastify.register(adminRpcRoutes, { prefix: '/api/admin' })
 
-  // TODO: プロジェクトに応じてルートを追加
-  // 例:
-  // await fastify.register(webhookRoutes, { prefix: '/webhook' })
-  // await fastify.register(userRpcRoutes, { prefix: '/api/user' })
+  // User API ルート（oRPC）
+  await fastify.register(userRpcRoutes, { prefix: '/api/user' })
 
   // 静的ファイル配信（React SPA）
   const distPath = join(__dirname, '../../dist')

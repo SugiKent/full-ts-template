@@ -1,0 +1,55 @@
+{
+  "appName": "Full-TS テンプレート",
+  "loading": "読み込み中...",
+  "error": "エラーが発生しました",
+  "submit": "送信",
+  "submitting": "送信中...",
+  "submitButton": "送信する",
+  "cancel": "キャンセル",
+  "save": "保存",
+  "delete": "削除",
+  "edit": "編集",
+  "back": "戻る",
+  "next": "次へ",
+  "confirm": "確認",
+  "close": "閉じる",
+  "yes": "はい",
+  "no": "いいえ",
+  "language": "言語",
+  "selectLanguage": "言語を選択",
+  "settings": "設定",
+  "logout": "ログアウト",
+  "login": "ログイン",
+  "signup": "新規登録",
+  "detail": "詳細",
+  "you": "あなた",
+  "operator": "運営",
+  "navigation": {
+    "home": "ホーム",
+    "contact": "お問い合わせ"
+  },
+  "userIcon": "ユーザーアイコン",
+  "role": {
+    "admin": "管理者",
+    "user": "ユーザー"
+  },
+  "home": {
+    "title": "ホーム",
+    "welcome": "ようこそ、{{name}}さん",
+    "accountInfo": "アカウント情報",
+    "feature1": "機能1",
+    "feature2": "機能2",
+    "feature3": "機能3"
+  },
+  "contact": {
+    "title": "お問い合わせ",
+    "description": "ご質問やお困りのことがあればお気軽にお問い合わせください",
+    "new": "新規お問い合わせ",
+    "history": "お問い合わせ履歴",
+    "subjectPlaceholder": "お問い合わせの件名を入力してください",
+    "contentPlaceholder": "お問い合わせ内容を詳しくお書きください",
+    "messagePlaceholder": "メッセージを入力...",
+    "threadTitle": "お問い合わせ詳細",
+    "threadDescription": "お問い合わせの詳細を確認できます"
+  }
+}

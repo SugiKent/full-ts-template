@@ -1,22 +1,21 @@
 /**
- * ユーザーログインページ
+ * ユーザーログインページ（パスワードレス - マジックリンク）
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useUserAuth } from '../../hooks/useUserAuth'
 
-type LoginMode = 'password' | 'magicLink'
-
 export default function UserLogin() {
+  const { t } = useTranslation('auth')
+  const { t: tCommon } = useTranslation('common')
   const [searchParams, setSearchParams] = useSearchParams()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-  const [loginMode, setLoginMode] = useState<LoginMode>('password')
+  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
 
-  const { user, signIn, sendMagicLink } = useUserAuth()
+  const { user, signIn } = useUserAuth()
   const navigate = useNavigate()
 
   // URLクエリパラメータからエラーメッセージを取得
@@ -36,256 +35,164 @@ export default function UserLogin() {
     }
   }, [user, navigate])
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrorMessage('')
-    setSuccessMessage('')
 
     try {
-      const result = await signIn(email, password)
+      const result = await signIn(email)
 
       if (result.success) {
-        navigate('/user/home', { replace: true })
+        setIsMagicLinkSent(true)
       } else {
-        setErrorMessage(result.error || 'ログインに失敗しました')
+        setErrorMessage(result.error || 'ログインリンクの送信に失敗しました')
       }
     } catch (_err) {
-      setErrorMessage('ログインに失敗しました')
+      setErrorMessage('ログインリンクの送信に失敗しました')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleResendMagicLink = async () => {
     setIsSubmitting(true)
-    setErrorMessage('')
-    setSuccessMessage('')
-
     try {
-      const result = await sendMagicLink(email)
-
-      if (result.success) {
-        setSuccessMessage('ログインリンクを送信しました。メールをご確認ください。')
-      } else {
-        setErrorMessage(result.error || 'マジックリンクの送信に失敗しました')
-      }
+      await signIn(email)
     } catch (_err) {
-      setErrorMessage('マジックリンクの送信に失敗しました')
+      // 再送信エラーは無視
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // マジックリンク送信完了画面
+  if (isMagicLinkSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+              <svg
+                className="h-8 w-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">{t('login.magicLinkSent')}</h2>
+            <p className="mt-3 text-gray-600">{t('login.magicLinkDescription')}</p>
+            <p className="mt-2 text-sm text-gray-500">{email}</p>
+          </div>
+
+          <div className="rounded-lg bg-blue-50 p-4 border border-blue-100">
+            <p className="text-sm text-blue-800">{t('login.checkSpam')}</p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleResendMagicLink}
+              disabled={isSubmitting}
+              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? tCommon('submitting') : t('login.resendLink')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsMagicLinkSent(false)
+                setEmail('')
+              }}
+              className="w-full flex justify-center py-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-800"
+            >
+              {t('login.tryDifferentEmail')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">ログイン</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">アカウントにログイン</p>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {t('login.title')}
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">{t('login.emailHint')}</p>
         </div>
 
-        {/* ログインモード切り替え */}
-        <div className="flex border-b border-gray-200">
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode('password')
-              setErrorMessage('')
-              setSuccessMessage('')
-            }}
-            className={`flex-1 py-2 px-4 text-center text-sm font-medium ${
-              loginMode === 'password'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            パスワードでログイン
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode('magicLink')
-              setErrorMessage('')
-              setSuccessMessage('')
-            }}
-            className={`flex-1 py-2 px-4 text-center text-sm font-medium ${
-              loginMode === 'magicLink'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            マジックリンク
-          </button>
-        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              メールアドレス
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              placeholder="you@example.com"
+              disabled={isSubmitting}
+            />
+          </div>
 
-        {loginMode === 'password' ? (
-          <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  メールアドレス
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="メールアドレス"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  パスワード
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="パスワード"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
+          <p className="text-sm text-gray-500">{t('login.magicLinkHint')}</p>
 
-            {errorMessage && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{errorMessage}</h3>
-                  </div>
+          {errorMessage && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">{errorMessage}</h3>
                 </div>
               </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'ログイン中...' : 'ログイン'}
-              </button>
             </div>
-          </form>
-        ) : (
-          <form className="mt-8 space-y-6" onSubmit={handleMagicLinkSubmit}>
-            <div>
-              <label htmlFor="magic-email" className="sr-only">
-                メールアドレス
-              </label>
-              <input
-                id="magic-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="メールアドレス"
-                disabled={isSubmitting}
-              />
-            </div>
+          )}
 
-            <p className="text-sm text-gray-600">
-              メールアドレスを入力すると、ログインリンクが送信されます。リンクをクリックしてログインしてください。
-            </p>
-
-            {errorMessage && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{errorMessage}</h3>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-green-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-green-800">{successMessage}</h3>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? '送信中...' : 'ログインリンクを送信'}
-              </button>
-            </div>
-          </form>
-        )}
+          <div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? tCommon('submitting') : t('login.sendMagicLink')}
+            </button>
+          </div>
+        </form>
 
         <div className="text-sm text-center">
           <Link to="/user/signup" className="font-medium text-blue-600 hover:text-blue-500">
-            新規アカウント登録はこちら
+            {t('login.newAccountLink')}
           </Link>
-        </div>
-
-        <div className="text-xs text-center text-gray-500">
-          {/* TODO: 本番環境ではこの表示を削除してください */}
-          開発用アカウント: user@example.com / password
         </div>
       </div>
     </div>

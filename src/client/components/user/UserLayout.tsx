@@ -2,6 +2,7 @@
  * ユーザー向け共通レイアウトコンポーネント
  * すべてのユーザー向け画面で統一されたヘッダーとナビゲーションを提供
  */
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 export type NavItem = {
@@ -17,22 +18,28 @@ type UserLayoutProps = {
   currentPath: string
   navItems?: NavItem[]
   // TODO: プロジェクトに応じて認証フックから取得したユーザー情報を渡す
-  user?: { name: string }
+  user?: { name: string; email?: string }
   onLogout?: () => void
 }
-
-const defaultNavItems: NavItem[] = [{ path: 'home', label: 'ホーム', route: '/user/home' }]
 
 export function UserLayout({
   children,
   title,
   description,
   currentPath,
-  navItems = defaultNavItems,
+  navItems,
   user,
   onLogout,
 }: UserLayoutProps) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
+
+  const defaultNavItems: NavItem[] = [
+    { path: 'home', label: t('navigation.home'), route: '/user/home' },
+    { path: 'contact', label: t('navigation.contact'), route: '/user/contact' },
+  ]
+
+  const navItemsToUse = navItems ?? defaultNavItems
 
   const handleLogout = async () => {
     if (onLogout) {
@@ -71,7 +78,7 @@ export function UserLayout({
       <nav className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
-            {navItems.map((item) => (
+            {navItemsToUse.map((item) => (
               <button
                 key={item.path}
                 type="button"

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/client/main.tsx"],
+  "project": ["src/**/*.{ts,tsx}", "prisma/**/*.ts", "tests/**/*.ts", "customLinter/**/*.ts"],
+  "ignore": ["**/*.d.ts", "**/node_modules/**", "**/dist/**", "**/*.config.ts", "**/*.config.js"],
+  "ignoreDependencies": [
+    "@tailwindcss/forms",
+    "@tailwindcss/typography",
+    "tailwindcss",
+    "pino-pretty"
+  ],
+  "vite": {
+    "config": "vite.config.ts"
+  },
+  "vitest": {
+    "config": "vitest.config.ts"
+  },
+  "playwright": {
+    "config": "playwright.config.ts"
+  }
+}

@@ -55,7 +55,15 @@ export function checkFetchUsageInClient(): { hasError: boolean; violations: Viol
     }
 
     // oRPC クライアント内部実装は除外
-    if (relativePath.includes('src/client/services/orpc-client.ts')) {
+    if (relativePath.includes('orpc-client.ts') && relativePath.includes('src/client/services/')) {
+      return false
+    }
+
+    // 認証フックは Better Auth への直接 fetch が必要なため除外
+    if (relativePath.includes('src/client/hooks/useUserAuth.ts')) {
+      return false
+    }
+    if (relativePath.includes('src/client/hooks/useAdminAuth.ts')) {
       return false
     }
 
@@ -82,6 +90,7 @@ export function checkFetchUsageInClient(): { hasError: boolean; violations: Viol
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
+        if (line === undefined) continue
 
         // インポート文は除外
         if (line.trim().startsWith('import')) {

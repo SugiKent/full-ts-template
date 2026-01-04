@@ -3,10 +3,12 @@
  * ログイン後のメイン画面
  */
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useUserAuth } from '../../hooks/useUserAuth'
 
 export default function UserHome() {
+  const { t } = useTranslation('common')
   const { user, loading, error, signOut } = useUserAuth()
   const navigate = useNavigate()
 
@@ -33,7 +35,7 @@ export default function UserHome() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent" />
-          <p className="mt-2 text-sm text-gray-600">読み込み中...</p>
+          <p className="mt-2 text-sm text-gray-600">{t('loading')}</p>
         </div>
       </div>
     )
@@ -51,8 +53,8 @@ export default function UserHome() {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">ホーム</h1>
-              <p className="mt-1 text-sm text-gray-500">ようこそ、{user.name}さん</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('home.title')}</h1>
+              <p className="mt-1 text-sm text-gray-500">{t('home.welcome', { name: user.name })}</p>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{user.email}</span>
@@ -82,7 +84,7 @@ export default function UserHome() {
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    aria-label="ユーザーアイコン"
+                    aria-label={t('userIcon')}
                     role="img"
                   >
                     <path
@@ -94,11 +96,13 @@ export default function UserHome() {
                 </div>
               </div>
               <div className="ml-5">
-                <h2 className="text-lg font-medium text-gray-900">アカウント情報</h2>
+                <h2 className="text-lg font-medium text-gray-900">{t('home.accountInfo')}</h2>
                 <div className="mt-2 text-sm text-gray-500">
                   <p>名前: {user.name}</p>
                   <p>メールアドレス: {user.email}</p>
-                  <p>アカウントタイプ: {user.role === 'admin' ? '管理者' : 'ユーザー'}</p>
+                  <p>
+                    アカウントタイプ: {user.role === 'admin' ? t('role.admin') : t('role.user')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -116,7 +120,9 @@ export default function UserHome() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">機能1</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      {t('home.feature1')}
+                    </dt>
                     <dd className="text-lg font-semibold text-gray-900">
                       {/* TODO: プロジェクトに応じて実装 */}
                       コンテンツ
@@ -136,7 +142,9 @@ export default function UserHome() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">機能2</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      {t('home.feature2')}
+                    </dt>
                     <dd className="text-lg font-semibold text-gray-900">
                       {/* TODO: プロジェクトに応じて実装 */}
                       コンテンツ
@@ -156,7 +164,9 @@ export default function UserHome() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">機能3</dt>
+                    <dt className="truncate text-sm font-medium text-gray-500">
+                      {t('home.feature3')}
+                    </dt>
                     <dd className="text-lg font-semibold text-gray-900">
                       {/* TODO: プロジェクトに応じて実装 */}
                       コンテンツ

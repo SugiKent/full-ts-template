@@ -53,6 +53,38 @@ AI エージェントを使用することで、開発タスクの効率化と�
 
 **必須参照**: `@PROJECT.md`
 
+## 多言語対応（i18n）
+
+このプロジェクトはi18n対応しています。
+
+**対応言語設定**: `src/shared/config/i18n.ts` で定義されています。新しい言語を追加する場合はこのファイルを更新してください。
+
+**詳細は `@docs/FRONTEND.md` の「7. 多言語対応（i18n）」セクションを参照してください。**
+
+### 必須ルール
+
+- **すべての UI テキストは翻訳キーを使用**（ハードコード禁止）
+- 新しいテキスト追加時は **対応言語すべて** に翻訳を追加
+- `pnpm run lint` でハードコードテキストが検出される
+
+```tsx
+// ❌ 禁止: ハードコードテキスト
+<button>送信</button>
+<p>Welcome to our app</p>
+
+// ✅ 正しい実装
+const { t } = useTranslation('user')
+<button>{t('common.submit')}</button>
+<p>{t('home.welcome')}</p>
+```
+
+### 翻訳ファイルの場所
+
+`src/client/locales/{言語コード}/{namespace}.json`
+
+対応言語は `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` を参照。
+namespace は同ファイルの `I18N_NAMESPACES` を参照。
+
 ## 実装検証ルール 🔍
 
 ### 必須: 定期的な品質チェック

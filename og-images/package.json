@@ -1,0 +1,14 @@
+{
+  "name": "og-images",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OGP画像生成ツール",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx generate.ts"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.57.0",
+    "tsx": "^4.21.0"
+  }
+}

@@ -1,105 +1,42 @@
 /**
  * Prisma Seed スクリプト
- * デフォルト管理者アカウントを作成します
+ * サービスに必須のデータ（管理者アカウント等）のみを作成します
+ *
+ * テスト・開発用のサンプルデータは testData.ts を使用してください:
+ *   pnpm run db:testData
  */
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding database...')
+  console.log('🌱 Seeding essential data...')
 
-  // データベースを完全にリセット
-  console.log('🗑️  Resetting database...')
+  // 管理者アカウントの設定
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com'
 
-  // 外部キー制約を考慮して削除順序を決定
-  await prisma.session.deleteMany({})
-  console.log('  ✓ Deleted all sessions')
+  // 管理者ユーザーが存在しない場合のみ作成
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  })
 
-  await prisma.account.deleteMany({})
-  console.log('  ✓ Deleted all accounts')
-
-  await prisma.verification.deleteMany({})
-  console.log('  ✓ Deleted all verifications')
-
-  await prisma.user.deleteMany({})
-  console.log('  ✓ Deleted all users')
-
-  console.log('✅ Database reset completed!\n')
-
-  // テスト用アカウントの設定
-  const testAccounts = [
-    {
-      email: 'admin@example.com',
-      password: 'password',
-      name: '管理者',
-      role: 'admin',
-    },
-    {
-      email: 'user@example.com',
-      password: 'password',
-      name: 'テストユーザー',
-      role: 'user',
-    },
-  ]
-
-  // Better Auth API を使用してユーザーを作成
-  console.log('Creating test users via Better Auth API...')
-
-  for (const account of testAccounts) {
-    try {
-      const response = await fetch('http://localhost:8080/api/auth/sign-up/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: account.email,
-          password: account.password,
-          name: account.name,
-          role: account.role,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(`Failed to create user: ${JSON.stringify(error)}`)
-      }
-
-      await response.json()
-      console.log(`User created via Better Auth API: ${account.email}`)
-
-      // emailVerifiedをtrueに設定（開発環境用）
-      await prisma.user.update({
-        where: { email: account.email },
-        data: { emailVerified: true },
-      })
-
-      console.log(`✅ Created ${account.role} user: ${account.email}`)
-      console.log(`   Email: ${account.email}`)
-      console.log(`   Password: ${account.password}`)
-      console.log(`   Role: ${account.role}`)
-    } catch (error) {
-      console.error(`❌ Failed to create user ${account.email}:`, error)
-    }
-  }
-
-  console.log('\n⚠️  本番環境では必ずパスワードを変更してください!')
-  console.log('\n📝 テストアカウント情報:')
-  console.log('   管理者: admin@example.com / password')
-  console.log('   ユーザー: user@example.com / password')
-
-  // サーバーが起動していない場合のメッセージ
-  if (testAccounts.length > 0) {
-    const userCount = await prisma.user.count()
-    if (userCount === 0) {
-      console.log('\n⚠️  ユーザーが作成されていません')
-      console.log('   サーバーが起動していることを確認してください')
-      console.log('   pnpm run dev:server でサーバーを起動してから再実行してください')
-    }
+  if (!existingAdmin) {
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: '管理者',
+        role: 'admin',
+        emailVerified: true,
+      },
+    })
+    console.log(`✅ Created admin user: ${adminEmail}`)
+  } else {
+    console.log(`ℹ️  Admin user already exists: ${adminEmail}`)
   }
 
   console.log('\n🎉 Seeding completed!')
+  console.log('\n💡 テスト・開発用データを追加するには:')
+  console.log('   pnpm run db:testData')
 }
 
 main()

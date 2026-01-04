@@ -1,6 +1,6 @@
 /**
  * ユーザー用認証フック
- * Better Auth Clientを使用してログイン/ログアウト機能を提供します
+ * Better Auth Clientを使用してマジックリンク認証を提供します（パスワードレス）
  */
 import { createAuthClient } from 'better-auth/client'
 import { magicLinkClient } from 'better-auth/client/plugins'
@@ -26,7 +26,7 @@ export interface User {
 }
 
 /**
- * ユーザー用認証フック
+ * ユーザー用認証フック（パスワードレス）
  */
 export function useUserAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -67,37 +67,36 @@ export function useUserAuth() {
   }, [])
 
   /**
-   * Email/パスワードでサインアップ（新規登録）
+   * パスワードレス登録（マジックリンク送信）
    * 一般ユーザーとして登録（role='user'）
    */
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, name: string) => {
     try {
       setError(null)
       setLoading(true)
 
-      // Better Authのカスタムフィールド(role)を含めて登録
-      const result = await userAuthClient.signUp.email({
-        email,
-        password,
-        name,
-        // @ts-expect-error - roleはサーバー側で設定されたカスタムフィールド
-        role: 'user',
+      // カスタムエンドポイントを使用してパスワードレス登録
+      const response = await fetch('/api/auth/register-passwordless', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          role: 'user',
+          callbackURL: `${window.location.origin}/user/home`,
+        }),
       })
 
-      if (result.error) {
-        setError(result.error.message || '登録に失敗しました')
-        return { success: false, error: result.error.message }
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || '登録に失敗しました')
+        return { success: false, error: result.error }
       }
 
-      // Better Authのレスポンスから user を取得
-      const responseData = result.data
-      if (responseData && 'user' in responseData && responseData.user) {
-        setUser(responseData.user as unknown as User)
-        return { success: true }
-      }
-
-      setError('登録に失敗しました')
-      return { success: false, error: '登録に失敗しました' }
+      return { success: true }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '登録に失敗しました'
       setError(errorMessage)
@@ -108,17 +107,16 @@ export function useUserAuth() {
   }
 
   /**
-   * Email/パスワードでサインイン
-   * ロールチェック: userロールのみ許可
+   * マジックリンクでサインイン（パスワードレス）
    */
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string) => {
     try {
       setError(null)
       setLoading(true)
 
-      const result = await userAuthClient.signIn.email({
+      const result = await userAuthClient.signIn.magicLink({
         email,
-        password,
+        callbackURL: `${window.location.origin}/user/home`,
       })
 
       if (result.error) {
@@ -126,36 +124,7 @@ export function useUserAuth() {
         return { success: false, error: result.error.message }
       }
 
-      // Better Authのレスポンスから user を取得
-      // result.data は { user, session } またはnullを含む可能性がある
-      const responseData = result.data
-      if (responseData && 'user' in responseData && responseData.user) {
-        const signedInUser = responseData.user as unknown as User
-
-        // ロールチェック: userロールのみ許可
-        if (signedInUser.role !== 'user') {
-          // 許可されていないロールの場合はサインアウトしてエラー
-          await userAuthClient.signOut()
-          setUser(null)
-          const errorMsg =
-            '管理者アカウントではこちらからログインできません。管理画面からログインしてください。'
-          setError(errorMsg)
-          return { success: false, error: errorMsg }
-        }
-
-        setUser(signedInUser)
-
-        // セッションが確実に確立されるよう、再度getSessionを呼び出す
-        const sessionResult = await userAuthClient.getSession()
-        if (sessionResult.data && 'user' in sessionResult.data && sessionResult.data.user) {
-          setUser(sessionResult.data.user as unknown as User)
-        }
-
-        return { success: true }
-      }
-
-      setError('ログインに失敗しました')
-      return { success: false, error: 'ログインに失敗しました' }
+      return { success: true }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'ログインに失敗しました'
       setError(errorMessage)
@@ -182,34 +151,6 @@ export function useUserAuth() {
     }
   }
 
-  /**
-   * マジックリンクを送信
-   */
-  const sendMagicLink = async (email: string) => {
-    try {
-      setError(null)
-      setLoading(true)
-
-      const result = await userAuthClient.signIn.magicLink({
-        email,
-        callbackURL: `${window.location.origin}/user/home`,
-      })
-
-      if (result.error) {
-        setError(result.error.message || 'マジックリンクの送信に失敗しました')
-        return { success: false, error: result.error.message }
-      }
-
-      return { success: true }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'マジックリンクの送信に失敗しました'
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return {
     user,
     loading,
@@ -217,6 +158,5 @@ export function useUserAuth() {
     signUp,
     signIn,
     signOut,
-    sendMagicLink,
   }
 }

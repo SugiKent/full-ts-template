@@ -1,0 +1,55 @@
+{
+  "appName": "Full-TS Template",
+  "loading": "Loading...",
+  "error": "An error occurred",
+  "submit": "Submit",
+  "submitting": "Submitting...",
+  "submitButton": "Submit",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "back": "Back",
+  "next": "Next",
+  "confirm": "Confirm",
+  "close": "Close",
+  "yes": "Yes",
+  "no": "No",
+  "language": "Language",
+  "selectLanguage": "Select language",
+  "settings": "Settings",
+  "logout": "Logout",
+  "login": "Login",
+  "signup": "Sign Up",
+  "detail": "Detail",
+  "you": "You",
+  "operator": "Support",
+  "navigation": {
+    "home": "Home",
+    "contact": "Contact"
+  },
+  "userIcon": "User icon",
+  "role": {
+    "admin": "Admin",
+    "user": "User"
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Welcome, {{name}}",
+    "accountInfo": "Account Information",
+    "feature1": "Feature 1",
+    "feature2": "Feature 2",
+    "feature3": "Feature 3"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Feel free to contact us with any questions or concerns",
+    "new": "New Contact",
+    "history": "Contact History",
+    "subjectPlaceholder": "Enter the subject of your inquiry",
+    "contentPlaceholder": "Please describe your inquiry in detail",
+    "messagePlaceholder": "Enter message...",
+    "threadTitle": "Contact Details",
+    "threadDescription": "View contact details"
+  }
+}

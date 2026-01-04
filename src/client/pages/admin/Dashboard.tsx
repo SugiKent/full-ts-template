@@ -2,14 +2,39 @@
  * 管理画面ダッシュボードページ
  * プロジェクトに応じて統計カードやクイックアクションをカスタマイズしてください
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AdminLayout } from '../../components/admin/AdminLayout'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
+import { orpcClient } from '../../services/orpc-client'
 
 export default function Dashboard() {
   const { user, loading, error } = useAdminAuth()
   const navigate = useNavigate()
+  const [jobStatus, setJobStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(
+    null,
+  )
+  const [isAddingJob, setIsAddingJob] = useState(false)
+
+  /**
+   * テストジョブを追加
+   */
+  const handleAddTestJob = async () => {
+    setIsAddingJob(true)
+    setJobStatus(null)
+
+    try {
+      const result = await orpcClient.jobs.addTestJob()
+      setJobStatus({ message: result.message, type: 'success' })
+    } catch (err) {
+      setJobStatus({
+        message: err instanceof Error ? err.message : 'ジョブの追加に失敗しました',
+        type: 'error',
+      })
+    } finally {
+      setIsAddingJob(false)
+    }
+  }
 
   // 未認証の場合はログインページにリダイレクト
   useEffect(() => {
@@ -76,19 +101,35 @@ export default function Dashboard() {
       {/* クイックアクション */}
       <div className="px-4 py-6 sm:px-0">
         <h2 className="mb-4 text-lg font-medium text-gray-900">クイックアクション</h2>
+
+        {/* ジョブステータス表示 */}
+        {jobStatus && (
+          <div
+            className={`mb-4 rounded-md p-4 ${
+              jobStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            }`}
+          >
+            {jobStatus.message}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* TODO: プロジェクトに応じてクイックアクションを追加 */}
+          {/* テストジョブ追加ボタン */}
           <button
             type="button"
-            onClick={() => {
-              // TODO: 適切なページへ遷移
-            }}
-            className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            onClick={handleAddTestJob}
+            disabled={isAddingJob}
+            className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="mb-2 block text-3xl">➕</span>
-            <span className="block text-sm font-medium text-gray-900">アクション1</span>
-            <span className="mt-1 block text-xs text-gray-500">説明文をここに記載</span>
+            <span className="mb-2 block text-3xl">{isAddingJob ? '...' : '🔧'}</span>
+            <span className="block text-sm font-medium text-gray-900">
+              {isAddingJob ? '追加中...' : 'テストジョブを追加する'}
+            </span>
+            <span className="mt-1 block text-xs text-gray-500">
+              ワーカーの動作確認用テストジョブをキューに追加
+            </span>
           </button>
+          {/* TODO: プロジェクトに応じてクイックアクションを追加 */}
           <button
             type="button"
             onClick={() => {

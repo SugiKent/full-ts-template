@@ -6,6 +6,7 @@
  */
 
 import { os } from '@orpc/server'
+import { contactRouter } from './contact.js'
 
 /**
  * UserRouter
@@ -13,6 +14,7 @@ import { os } from '@orpc/server'
  * クライアント側で型安全にアクセスするためのルーター定義
  */
 export const userRouter = os.router({
+  contact: os.router(contactRouter),
   // TODO: プロジェクトに応じてProcedureを追加
   // 例:
   // profile: os.router({

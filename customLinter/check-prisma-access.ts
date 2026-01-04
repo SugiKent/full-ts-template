@@ -77,6 +77,7 @@ export function checkPrismaDirectAccess(): { hasError: boolean; violations: Viol
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
+        if (line === undefined) continue
         // インポート文は除外
         if (line.trim().startsWith('import')) {
           continue
