@@ -24,9 +24,9 @@
 
 ```tsx
 // ✅ 正しい実装: React 19 Actions
-// src/client/components/UserRegistrationForm.tsx
+// apps/client/src/components/UserRegistrationForm.tsx
 import { useActionState } from 'react'
-import { api } from '@/client/services/api'
+import { api } from '@/services/api'
 
 interface FormState {
   error?: string
@@ -121,9 +121,9 @@ export default UserRegistrationForm
 
 ```tsx
 // ✅ 正しい実装: useOptimistic
-// src/client/components/TodoList.tsx
+// apps/client/src/components/TodoList.tsx
 import { useOptimistic } from 'react'
-import { api } from '@/client/services/api'
+import { api } from '@/services/api'
 
 interface Todo {
   id: string
@@ -195,9 +195,9 @@ export default TodoList
 
 ```tsx
 // ✅ 正しい実装: use フック
-// src/client/components/UserProfile.tsx
+// apps/client/src/components/UserProfile.tsx
 import { use, Suspense } from 'react'
-import { api } from '@/client/services/api'
+import { api } from '@/services/api'
 
 interface User {
   id: string
@@ -239,7 +239,7 @@ export default UserProfilePage
 
 ```tsx
 // ✅ 正しい実装: useFormStatus
-// src/client/components/SubmitButton.tsx
+// apps/client/src/components/SubmitButton.tsx
 import { useFormStatus } from 'react-dom'
 
 function SubmitButton() {
@@ -347,7 +347,7 @@ const UserCard = styled.div`
 Tailwind v4はCSS-firstの設定を採用しており、`tailwind.config.js`は不要です。
 
 ```css
-/* src/client/styles/index.css */
+/* apps/client/src/styles/index.css */
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
@@ -439,9 +439,9 @@ export default UserCard
 
 ```tsx
 // ✅ 正しい実装: カスタムフック
-// src/client/hooks/useUser.ts
+// apps/client/src/hooks/useUser.ts
 import { useState, useEffect } from 'react'
-import { api } from '@/client/services/api'
+import { api } from '@/services/api'
 
 interface User {
   id: string
@@ -474,7 +474,7 @@ export function useUser(userId: string) {
 
 ```tsx
 // ✅ 正しい実装: Context API
-// src/client/contexts/ThemeContext.tsx
+// apps/client/src/contexts/ThemeContext.tsx
 import { createContext, useState, ReactNode } from 'react'
 
 interface ThemeContextType {
@@ -503,7 +503,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 ```tsx
 // ✅ 正しい実装: useReducer + Context
-// src/client/contexts/AppContext.tsx
+// apps/client/src/contexts/AppContext.tsx
 import { createContext, useReducer, ReactNode } from 'react'
 
 interface AppState {
@@ -592,7 +592,7 @@ function ImageGallery() {
 
 ```typescript
 // ✅ 推奨: コンポーネント単体テスト
-// src/client/components/UserCard.test.tsx
+// apps/client/src/components/UserCard.test.tsx
 import { render, screen } from '@testing-library/react'
 import { UserCard } from './UserCard'
 
@@ -608,7 +608,7 @@ it('ユーザーカードが正しく表示される', () => {
 
 ```typescript
 // ✅ 推奨: カスタムフックのテスト
-// src/client/hooks/useUser.test.ts
+// apps/client/src/hooks/useUser.test.ts
 import { renderHook, waitFor } from '@testing-library/react'
 import { useUser } from './useUser'
 
@@ -632,18 +632,18 @@ it('useUser がユーザー情報を取得する', async () => {
 
 ### 7.1 言語設定
 
-**対応言語は `src/shared/config/i18n.ts` で一元管理されています。**
+**対応言語は `packages/shared/src/config/i18n.ts` で一元管理されています。**
 
 ```typescript
-// src/shared/config/i18n.ts
+// packages/shared/src/config/i18n.ts
 export const SUPPORTED_LANGUAGES = ['ja'] as const  // 対応言語を変更する場合はここを編集
 export const I18N_NAMESPACES = ['common', 'auth'] as const  // namespaceを追加する場合はここを編集
 ```
 
 新しい言語を追加する場合：
-1. `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` に言語コードを追加
-2. `src/client/locales/{言語コード}/` ディレクトリに翻訳ファイルを作成
-3. `src/client/i18n/index.ts` でリソースをimportして追加
+1. `packages/shared/src/config/i18n.ts` の `SUPPORTED_LANGUAGES` に言語コードを追加
+2. `apps/client/src/locales/{言語コード}/` ディレクトリに翻訳ファイルを作成
+3. `apps/client/src/i18n/index.ts` でリソースをimportして追加
 
 ### 7.2 基本ルール
 
@@ -654,14 +654,14 @@ export const I18N_NAMESPACES = ['common', 'auth'] as const  // namespaceを追�
 ### 7.3 翻訳ファイルの構成
 
 ```
-src/client/locales/
+apps/client/src/locales/
 ├── {言語コード}/          # 言語ごとのディレクトリ
 │   ├── common.json        # 共通（ボタン、ラベル等）
 │   ├── auth.json          # 認証画面
 │   └── ...                # 他のnamespace
 ```
 
-namespaceは `src/shared/config/i18n.ts` の `I18N_NAMESPACES` で定義されています。
+namespaceは `packages/shared/src/config/i18n.ts` の `I18N_NAMESPACES` で定義されています。
 
 ### 7.4 基本的な使い方
 
@@ -706,7 +706,7 @@ function BadComponent() {
 ### 7.5 翻訳キーの命名規則
 
 ```json
-// src/client/locales/ja/user.json
+// apps/client/src/locales/ja/user.json
 {
   "nav": {
     "home": "ホーム",
@@ -731,15 +731,15 @@ function BadComponent() {
 ### 7.6 新しい翻訳を追加する手順
 
 1. **適切な namespace を選択**
-   - `src/shared/config/i18n.ts` の `I18N_NAMESPACES` を確認
+   - `packages/shared/src/config/i18n.ts` の `I18N_NAMESPACES` を確認
    - 新しいnamespaceが必要な場合は設定ファイルに追加
 
 2. **対応言語すべてに追加**
-   - `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` を確認
+   - `packages/shared/src/config/i18n.ts` の `SUPPORTED_LANGUAGES` を確認
    - 各言語の翻訳ファイルに同じキー構造で追加
    ```bash
    # 例: 日本語のみ対応の場合
-   src/client/locales/ja/{namespace}.json
+   apps/client/src/locales/ja/{namespace}.json
    ```
 
 3. **翻訳内容の例**
@@ -809,7 +809,7 @@ setError(t('error.invalidInput'))
 言語切り替えは `LanguageSwitcher` コンポーネントで提供されています。
 
 ```tsx
-import { LanguageSwitcher } from '@/client/i18n/LanguageSwitcher'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 
 function Header() {
   return (

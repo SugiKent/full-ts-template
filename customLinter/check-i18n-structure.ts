@@ -6,9 +6,9 @@
 
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { SUPPORTED_LANGUAGES } from '../src/shared/config/i18n.js'
+import { SUPPORTED_LANGUAGES } from '../packages/shared/src/config/i18n.js'
 
-const LOCALES_DIR = 'src/client/locales'
+const LOCALES_DIR = 'apps/client/src/locales'
 
 type JsonObject = { [key: string]: unknown }
 

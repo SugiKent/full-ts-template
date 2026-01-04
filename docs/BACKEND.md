@@ -32,10 +32,10 @@
 
 ```typescript
 // ✅ 正しい実装: oRPC Procedure定義
-// src/server/procedures/user.ts
+// apps/server/src/procedures/user.ts
 import { os } from '@orpc/server'
 import { z } from 'zod'
-import { prisma } from '@/server/db/client'
+import { prisma } from '@/db/client'
 
 // 入力スキーマ定義
 const CreateUserInput = z.object({
@@ -88,11 +88,11 @@ export const userRouter = {
 
 ```typescript
 // ✅ 正しい実装: oRPCをFastifyに統合
-// src/server/routes/rpc.ts
+// apps/server/src/routes/rpc.ts
 import { FastifyPluginAsync } from 'fastify'
 import { serve } from '@orpc/server'
-import { userRouter } from '@/server/procedures/user'
-import { appointmentRouter } from '@/server/procedures/appointment'
+import { userRouter } from '@/procedures/user'
+import { appointmentRouter } from '@/procedures/appointment'
 
 // ルーター統合
 export const appRouter = {
@@ -118,10 +118,10 @@ export default rpcRoutes
 
 ```typescript
 // ✅ 正しい実装: プラグインのカプセル化
-// src/server/plugins/database.ts
+// apps/server/src/plugins/database.ts
 import fp from 'fastify-plugin'
 import { FastifyPluginAsync } from 'fastify'
-import { prisma } from '@/server/db/client'
+import { prisma } from '@/db/client'
 
 const databasePlugin: FastifyPluginAsync = async (fastify, opts) => {
   // デコレーターでDBクライアントを追加
@@ -145,7 +145,7 @@ export default fp(databasePlugin, {
 
 ```typescript
 // ✅ 正しい実装: TypeBoxでスキーマと型を同時定義
-// src/server/schemas/user.ts
+// apps/server/src/schemas/user.ts
 import { Type, Static } from '@sinclair/typebox'
 
 // スキーマ定義
@@ -173,7 +173,7 @@ export type CreateUserInput = Static<typeof CreateUserSchema>
 
 ```typescript
 // ✅ 正しい実装: カスタムエラーハンドラー
-// src/server/hooks/errorHandler.ts
+// apps/server/src/hooks/errorHandler.ts
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
 
 export async function errorHandler(
@@ -226,7 +226,7 @@ export async function errorHandler(
 
 ```typescript
 // ✅ 正しい実装: Pinoロガーの設定
-// src/server/app.ts
+// apps/server/src/app.ts
 import Fastify from 'fastify'
 import pino from 'pino'
 
@@ -265,8 +265,8 @@ const fastify = Fastify({
 
 ```typescript
 // ✅ 正しい実装: Fastify型の拡張
-// src/server/types/fastify.d.ts
-import { ExtendedPrismaClient } from '@/server/db/client'
+// apps/server/src/types/fastify.d.ts
+import { ExtendedPrismaClient } from '@/db/client'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -292,7 +292,7 @@ declare module 'fastify' {
 ### 2.6 アプリケーション構成
 
 ```typescript
-// src/server/app.ts
+// apps/server/src/app.ts
 import Fastify from 'fastify'
 import autoLoad from '@fastify/autoload'
 import cors from '@fastify/cors'
@@ -359,8 +359,8 @@ export function build(opts = {}) {
 ```typescript
 // ✅ 正しい実装: Routes → Services → Repositories のレイヤード構造
 
-// Route層 (src/server/routes/users.ts)
-import { userService } from '@/server/services/userService'
+// Route層 (apps/server/src/routes/users.ts)
+import { userService } from '@/services/userService'
 
 export const userRoutes = (fastify: FastifyInstance) => {
   fastify.get('/users/:id', async (request, reply) => {
@@ -369,8 +369,8 @@ export const userRoutes = (fastify: FastifyInstance) => {
   })
 }
 
-// Service層 (src/server/services/userService.ts)
-import { userRepository } from '@/server/repositories/userRepository'
+// Service層 (apps/server/src/services/userService.ts)
+import { userRepository } from '@/repositories/userRepository'
 
 export const userService = {
   async findById(id: string) {
@@ -384,8 +384,8 @@ export const userService = {
   }
 }
 
-// Repository層 (src/server/repositories/userRepository.ts)
-import { prisma } from '@/server/db/client'
+// Repository層 (apps/server/src/repositories/userRepository.ts)
+import { prisma } from '@/db/client'
 
 export const userRepository = {
   async findById(id: string) {
@@ -407,7 +407,7 @@ export const userRepository = {
 
 ```typescript
 // ✅ 正しい実装: Prisma $extendsを使用したモデル拡張
-// src/server/db/client.ts
+// apps/server/src/db/client.ts
 import { PrismaClient, Prisma } from '@prisma/client'
 
 const userExtension = Prisma.defineExtension((client) => {
@@ -515,7 +515,7 @@ fastify.addHook('preHandler', async (request, reply) => {
 
 ```typescript
 // ✅ 正しい実装: 包括的なセキュリティ設定
-// src/server/plugins/security.ts
+// apps/server/src/plugins/security.ts
 import fp from 'fastify-plugin'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'

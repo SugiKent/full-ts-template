@@ -57,7 +57,7 @@ AI エージェントを使用することで、開発タスクの効率化と�
 
 このプロジェクトはi18n対応しています。
 
-**対応言語設定**: `src/shared/config/i18n.ts` で定義されています。新しい言語を追加する場合はこのファイルを更新してください。
+**対応言語設定**: `packages/shared/src/config/i18n.ts` で定義されています。新しい言語を追加する場合はこのファイルを更新してください。
 
 **詳細は `@docs/FRONTEND.md` の「7. 多言語対応（i18n）」セクションを参照してください。**
 
@@ -80,9 +80,9 @@ const { t } = useTranslation('user')
 
 ### 翻訳ファイルの場所
 
-`src/client/locales/{言語コード}/{namespace}.json`
+`apps/client/src/locales/{言語コード}/{namespace}.json`
 
-対応言語は `src/shared/config/i18n.ts` の `SUPPORTED_LANGUAGES` を参照。
+対応言語は `packages/shared/src/config/i18n.ts` の `SUPPORTED_LANGUAGES` を参照。
 namespace は同ファイルの `I18N_NAMESPACES` を参照。
 
 ## 実装検証ルール 🔍

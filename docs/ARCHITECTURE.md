@@ -23,6 +23,7 @@
 - **Node.js 24.11.1**: TypeScript直接実行サポート (`--experimental-transform-types`)
 - **TypeScript 5.9.3**: 最新版、Node.js内蔵実行
 - **Package Manager**: pnpm (高速・効率的な依存管理)
+- **Monorepo**: Turborepo (高速ビルドシステム・タスクオーケストレーション)
 
 ### 1.2 Backend Framework
 - **Fastify 5.1**: 高速Webフレームワーク
@@ -162,56 +163,98 @@ graph TB
 
 ## 3. プロジェクト構造
 
+### 3.1 Monorepo構成 (Turborepo)
+
+このプロジェクトはTurborepoを使用したmonorepo構成を採用しています。
+
 ```
 project/
-├── src/
-│   ├── server/                 # Fastify サーバー
-│   │   ├── procedures/         # oRPC Procedure定義
-│   │   ├── schemas/            # JSON Schema定義（TypeBox）
-│   │   ├── routes/             # Fastifyルート定義（ドメイン別）
-│   │   ├── controllers/        # リクエストハンドラー（ビジネスロジック）
-│   │   ├── services/           # ビジネスサービス層
-│   │   ├── plugins/            # Fastifyプラグイン（認証、DB、キャッシュ等）
-│   │   ├── hooks/              # Fastifyフック（onRequest、onError等）
-│   │   ├── decorators/         # Fastifyデコレーター拡張
-│   │   ├── auth/               # Better Auth設定と認証ロジック
-│   │   ├── prisma/             # Prismaスキーマと生成コード
-│   │   └── utils/              # ユーティリティ関数
-│   │
-│   ├── client/                 # React 管理画面
+├── apps/                       # アプリケーション
+│   ├── client/                 # @repo/client - React フロントエンド
 │   │   ├── src/
 │   │   │   ├── components/    # React コンポーネント
 │   │   │   ├── pages/         # ページコンポーネント
-│   │   │   ├── hooks/         # カスタムフック（React 19 新hooks含む）
+│   │   │   ├── hooks/         # カスタムフック
 │   │   │   ├── contexts/      # React Context定義
 │   │   │   ├── services/      # oRPC APIクライアント
-│   │   │   └── utils/         # ユーティリティ関数
-│   │   └── public/             # 静的ファイル
+│   │   │   ├── i18n/          # i18n設定
+│   │   │   ├── locales/       # 翻訳ファイル
+│   │   │   └── styles/        # Tailwind CSS
+│   │   ├── public/            # 静的ファイル
+│   │   └── package.json
 │   │
-│   └── shared/                 # 共通型定義・ユーティリティ
-│       ├── types/              # TypeScript 型定義
-│       └── constants/          # 定数定義
+│   ├── server/                 # @repo/server - Fastify バックエンド
+│   │   ├── src/
+│   │   │   ├── procedures/    # oRPC Procedure定義
+│   │   │   ├── routes/        # Fastifyルート定義
+│   │   │   ├── services/      # ビジネスサービス層
+│   │   │   ├── repositories/  # データアクセス層
+│   │   │   ├── plugins/       # Fastifyプラグイン
+│   │   │   ├── middleware/    # ミドルウェア
+│   │   │   ├── auth/          # Better Auth設定
+│   │   │   ├── config/        # 設定ファイル
+│   │   │   ├── db/            # Prismaクライアント
+│   │   │   ├── lib/           # ライブラリ（Sentry等）
+│   │   │   └── utils/         # ユーティリティ関数
+│   │   ├── prisma/            # Prismaスキーマ・マイグレーション
+│   │   └── package.json
+│   │
+│   └── worker/                 # @repo/worker - ジョブワーカー
+│       ├── src/
+│       │   └── workers/       # Bee-queueワーカー定義
+│       └── package.json
 │
-├── prisma/
-│   ├── schema.prisma           # Prismaスキーマ定義
-│   ├── migrations/             # Prismaマイグレーション
-│   └── seed.ts                 # シードデータ
+├── packages/                   # 共有パッケージ
+│   ├── shared/                 # @repo/shared - 共有型・スキーマ
+│   │   ├── src/
+│   │   │   ├── config/        # 共通設定（i18n等）
+│   │   │   ├── schemas/       # Zodスキーマ
+│   │   │   └── types/         # TypeScript型定義
+│   │   └── package.json
+│   │
+│   └── typescript-config/      # @repo/typescript-config
+│       ├── base.json          # 共通TypeScript設定
+│       ├── client.json        # クライアント用設定
+│       └── server.json        # サーバー用設定
 │
-├── scripts/                    # ビルド・デプロイスクリプト
-├── tests/                      # E2Eテストと共通ファイル
-│   ├── e2e/                    # Playwright E2Eテスト
-│   │   ├── specs/             # E2Eテストファイル (*.spec.ts)
-│   │   └── fixtures/          # E2Eテスト用フィクスチャ
-│   ├── mocks/                  # 共通モック
-│   ├── factories/              # テストデータファクトリー
-│   └── setup.ts                # Vitest グローバルセットアップ
-│   ※ 単体・統合テストはsrc/配下に配置 (*.test.ts, *.integration.test.ts)
+├── tests/                      # E2Eテスト
+│   ├── e2e/                   # Playwright E2Eテスト
+│   └── fixtures/              # テストフィクスチャ
 │
-├── docker-compose.yml          # Docker 構成
-├── package.json
-├── tsconfig.json              # TypeScript 設定
-└── biome.json                 # Biome 設定
+├── turbo.json                  # Turborepo設定
+├── pnpm-workspace.yaml         # pnpm ワークスペース設定
+├── docker-compose.yml          # Docker構成
+├── package.json                # ルートpackage.json
+├── tsconfig.json               # ルートTypeScript設定
+└── biome.json                  # Biome設定
 ```
+
+### 3.2 パッケージ依存関係
+
+```
+@repo/client ─────┬──→ @repo/shared
+                  └──→ @repo/server (型のみ)
+
+@repo/server ─────┬──→ @repo/shared
+                  └──→ @repo/typescript-config
+
+@repo/worker ─────┬──→ @repo/server
+                  └──→ @repo/shared
+```
+
+### 3.3 Turborepo タスク
+
+| タスク | 説明 | 依存関係 |
+|--------|------|----------|
+| `build` | 全パッケージをビルド | `^build` (依存パッケージを先にビルド) |
+| `dev` | 開発サーバー起動 | - |
+| `lint` | Biomeによるリント | `^lint` |
+| `format` | Biomeによるフォーマット | - |
+| `typecheck` | TypeScript型チェック | `^typecheck` |
+| `test` | テスト実行 | `^build` |
+| `test:e2e` | E2Eテスト | `build` |
+| `db:generate` | Prisma クライアント生成 | - |
+| `db:migrate` | Prisma マイグレーション | - |
 
 ## 4. 開発規約
 
@@ -263,9 +306,9 @@ project/
 
 #### テストファイルの配置
 
-- **単体テスト**: `src/**/*.test.ts` - アプリケーションコードと同じディレクトリ
-- **統合テスト**: `src/**/*.integration.test.ts` - アプリケーションコードと同じディレクトリ
-- **E2Eテスト**: `tests/e2e/specs/**/*.spec.ts` - 専用ディレクトリ
+- **単体テスト**: `apps/*/src/**/*.test.ts`, `packages/*/src/**/*.test.ts` - アプリケーションコードと同じディレクトリ
+- **統合テスト**: `apps/*/src/**/*.integration.test.ts` - アプリケーションコードと同じディレクトリ
+- **E2Eテスト**: `tests/e2e/**/*.spec.ts` - 専用ディレクトリ
 
 詳細な配置ルール、命名規則、ベストプラクティスは **[TEST.md](./TEST.md)** を参照してください。
 
@@ -349,14 +392,18 @@ chore: ビルド・ツール関連
 
 ### 6.1 ビルド・実行
 ```bash
-# TypeScript直接実行 (開発時)
-node --experimental-transform-types src/server/index.ts
+# 開発サーバー起動（全パッケージ）
+pnpm run dev
+
+# 特定パッケージの開発サーバー
+pnpm run dev --filter @repo/client
+pnpm run dev --filter @repo/server
 
 # 型チェック (CIで実行)
-tsc --noEmit
+pnpm run typecheck
 
 # ビルド (本番用)
-vite build
+pnpm run build
 ```
 
 ### 6.2 品質管理
@@ -503,7 +550,7 @@ pnpm run test
 
 **基本構造**:
 ```typescript
-// src/server/schedulers/example-scheduler.ts
+// apps/server/src/schedulers/example-scheduler.ts
 export async function executeTask(): Promise<{
   success: number
   failed: number
@@ -513,7 +560,7 @@ export async function executeTask(): Promise<{
 }
 ```
 
-**起動設定** (`src/server/index.ts`):
+**起動設定** (`apps/server/src/index.ts`):
 ```typescript
 import cron from 'node-cron'
 import { executeTask } from './schedulers/example-scheduler'
@@ -597,7 +644,7 @@ railway logs
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "node --experimental-transform-types src/server/index.ts"
+startCommand = "pnpm run start --filter @repo/server"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
