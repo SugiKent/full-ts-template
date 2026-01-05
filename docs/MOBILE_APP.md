@@ -1080,7 +1080,7 @@ export function useApp() {
 | **EAS Workflows** | CI/CD パイプライン | GitHub 連携 |
 | **EAS Metadata** | ストアメタデータ管理 | store.config.json |
 | **Expo Orbit** | シミュレーター管理 | デスクトップアプリ |
-| **Development Builds** | カスタム開発クライアント | 独自の Expo Go |
+| **Development Builds** | カスタム開発クライアント | ネイティブモジュール対応 |
 
 ### 10.2 開発環境セットアップ
 
@@ -1119,16 +1119,14 @@ eas init
 
 ### 10.3 Development Build（カスタム開発クライアント）
 
-Development Build は「自分専用の Expo Go」です。ネイティブモジュールを含むカスタムクライアントをビルドし、その後は JS の変更のみ高速にイテレーションできます。
+Development Build はネイティブモジュールを含むカスタム開発クライアントです。初回にビルドを作成し、その後は JS の変更のみ高速にイテレーションできます。
 
-#### なぜ Development Build を使うのか
+#### Development Build の利点
 
-| 項目 | Expo Go | Development Build |
-|------|---------|-------------------|
-| ネイティブモジュール | 制限あり | 自由に追加可能 |
-| カスタム設定 | 不可 | app.json で自由に設定 |
-| ビルド頻度 | 不要 | ネイティブ変更時のみ |
-| チーム共有 | - | EAS で配布可能 |
+- **ネイティブモジュール**: 任意のネイティブモジュールを追加可能
+- **カスタム設定**: app.json で自由に設定可能
+- **チーム共有**: EAS で配布可能
+- **ビルド頻度**: ネイティブコード変更時のみ再ビルド
 
 #### Development Build の作成
 
@@ -1464,7 +1462,6 @@ eas metadata:pull
 {
   "scripts": {
     "dev": "expo start --dev-client",
-    "dev:go": "expo start",
     "dev:ios": "expo start --dev-client --ios",
     "dev:android": "expo start --dev-client --android",
 

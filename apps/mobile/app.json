@@ -19,11 +19,6 @@
       },
       "package": "com.example.fulltsmobile"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": ["expo-dev-client", "expo-router", "expo-localization", "expo-secure-store"],
     "experiments": {
       "typedRoutes": true
