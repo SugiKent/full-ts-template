@@ -14,6 +14,8 @@
     "dev:client": "turbo run dev --filter=@repo/client",
     "dev:server": "turbo run dev --filter=@repo/server",
     "dev:worker": "turbo run dev --filter=@repo/worker",
+    "dev:mobile": "turbo run dev --filter=@repo/mobile",
+    "dev:api+mobile": "turbo run dev --filter=@repo/server --filter=@repo/mobile",
     "build": "turbo run build",
     "start": "pnpm --filter @repo/server start",
     "typecheck": "turbo run typecheck",

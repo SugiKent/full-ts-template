@@ -1,0 +1,10 @@
+# Placeholder for mobile app images
+# Required files:
+# - icon.png (1024x1024) - App icon
+# - adaptive-icon.png (1024x1024) - Android adaptive icon foreground
+# - favicon.png (48x48) - Web favicon
+#
+# You can generate these using:
+# - https://icon.kitchen/ (free icon generator)
+# - https://www.figma.com/ (design tool)
+# - npx expo-cli export:icon (if you have a base icon)

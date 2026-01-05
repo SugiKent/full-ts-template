@@ -85,3 +85,13 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 .turbo
+
+# Expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
