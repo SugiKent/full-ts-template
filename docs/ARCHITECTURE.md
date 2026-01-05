@@ -10,6 +10,7 @@
 - **[FRONTEND.md](./FRONTEND.md)** - フロントエンド開発規約（React 19、Tailwind CSS、コンポーネント設計など）
 - **[AUTH.md](./AUTH.md)** - 認証アーキテクチャ（管理画面認証、エンドユーザー認証）
 - **[DATABASE.md](./DATABASE.md)** - データベース設計（Prismaスキーマ、拡張パターン）
+- **[MOBILE_APP.md](./MOBILE_APP.md)** - モバイルアプリ開発規約（Expo + React Native）
 
 **実装時の注意**: 各機能を実装する際は、該当する専門ドキュメントを必ず参照してください。
 
