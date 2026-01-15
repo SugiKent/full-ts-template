@@ -18,6 +18,7 @@ import rateLimit from '@fastify/rate-limit'
 import fastifyStatic from '@fastify/static'
 import Fastify from 'fastify'
 import adminAuthPlugin from './plugins/admin-auth'
+import errorResponseLoggerPlugin from './plugins/error-response-logger'
 import adminRpcRoutes from './routes/admin/rpc.js'
 import userRpcRoutes from './routes/user/rpc.js'
 import { createFastifyLoggerOptions, createLogger } from './utils/logger'
@@ -96,6 +97,9 @@ async function createServer() {
   // Sentry エラーハンドラー
   setupSentryFastifyErrorHandler(fastify)
 
+  // エラーレスポンスロギングプラグイン
+  await fastify.register(errorResponseLoggerPlugin)
+
   // 管理画面認証プラグイン
   await fastify.register(adminAuthPlugin)
 
@@ -104,6 +108,14 @@ async function createServer() {
 
   // User API ルート（oRPC）
   await fastify.register(userRpcRoutes, { prefix: '/api/user' })
+
+  // 法的文書の静的ファイル配信（/legal/*）
+  const legalPath = join(__dirname, '../public/legal')
+  await fastify.register(fastifyStatic, {
+    root: legalPath,
+    prefix: '/legal/',
+    decorateReply: false, // 複数の fastifyStatic 登録時に必要
+  })
 
   // 静的ファイル配信（React SPA）
   const distPath = join(__dirname, '../../dist')

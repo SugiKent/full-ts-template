@@ -1,9 +1,9 @@
 {
-  "extends": "@repo/typescript-config/base.json",
+  "extends": "@wishlist/typescript-config/base.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@repo/shared/*": ["./src/*"]
+      "@wishlist/shared/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts"],

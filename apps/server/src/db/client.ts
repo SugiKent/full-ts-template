@@ -68,3 +68,19 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export type ExtendedPrismaClient = typeof prisma
+
+/**
+ * Prisma トランザクションクライアント型
+ *
+ * $transaction 内で使用されるクライアント
+ * PrismaClient と同じメソッドを持つが、トランザクション制御メソッドは除外
+ */
+export type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
+>
+
+/**
+ * PrismaClient または TransactionClient を受け入れるユニオン型
+ */
+export type PrismaOrTransaction = PrismaClient | TransactionClient

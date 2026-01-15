@@ -2,26 +2,18 @@
  * ユーザー向けAPI oRPC Router
  *
  * 一般ユーザー向けProcedureをまとめたRouter
- * プロジェクトに応じてProcedureを追加してください
+ * v1 Router を re-export して後方互換性を維持
  */
 
-import { os } from '@orpc/server'
-import { contactRouter } from './contact.js'
+import { v1Router } from './v1/index.js'
 
 /**
  * UserRouter
  *
- * クライアント側で型安全にアクセスするためのルーター定義
+ * v1 Router を直接エクスポート（後方互換性のため）
+ * 新規コードは `/api/user/v1/rpc` を使用すること
  */
-export const userRouter = os.router({
-  contact: os.router(contactRouter),
-  // TODO: プロジェクトに応じてProcedureを追加
-  // 例:
-  // profile: os.router({
-  //   get: getProfileProcedure,
-  //   update: updateProfileProcedure,
-  // }),
-})
+export const userRouter = v1Router
 
 /**
  * UserRouter型
@@ -29,3 +21,6 @@ export const userRouter = os.router({
  * クライアント側でこの型を使用してoRPCクライアントを初期化
  */
 export type UserRouter = typeof userRouter
+
+// v1 Router もエクスポート
+export { type V1Router, v1Router } from './v1/index.js'

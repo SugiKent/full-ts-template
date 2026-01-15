@@ -2,13 +2,10 @@
  * ユーザーログインページ（パスワードレス - マジックリンク）
  */
 import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useUserAuth } from '../../hooks/useUserAuth'
 
 export default function UserLogin() {
-  const { t } = useTranslation('auth')
-  const { t: tCommon } = useTranslation('common')
   const [searchParams, setSearchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -88,8 +85,10 @@ export default function UserLogin() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">{t('login.magicLinkSent')}</h2>
-            <p className="mt-3 text-gray-600">{t('login.magicLinkDescription')}</p>
+            <h2 className="text-2xl font-bold text-gray-900">ログインリンクを送信しました</h2>
+            <p className="mt-3 text-gray-600">
+              メールに記載されたリンクをクリックしてログインしてください。
+            </p>
             <p className="mt-2 text-sm text-gray-500">{email}</p>
           </div>
 

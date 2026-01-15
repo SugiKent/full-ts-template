@@ -43,7 +43,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@repo/shared/*": ["./packages/shared/src/*"]
+      "@wishlist/shared/*": ["./packages/shared/src/*"]
     }
   },
   "include": [
@@ -55,8 +55,15 @@
   ],
   "exclude": ["node_modules", "dist", "apps", "packages"],
   "references": [
-    { "path": "./apps/client" },
-    { "path": "./apps/server" },
-    { "path": "./packages/shared" }
-  ]
+    {
+      "path": "./apps/client"
+    },
+    {
+      "path": "./apps/server"
+    },
+    {
+      "path": "./packages/shared"
+    }
+  ],
+  "extends": "expo/tsconfig.base"
 }

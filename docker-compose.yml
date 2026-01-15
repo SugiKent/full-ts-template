@@ -3,27 +3,27 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: app-postgres
+    container_name: wishlist-postgres
     restart: unless-stopped
     ports:
       - "15432:5432"  # 変更: 5432 → 15432
     environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_pass
-      POSTGRES_DB: app_db
+      POSTGRES_USER: wishlist_user
+      POSTGRES_PASSWORD: wishlist_pass
+      POSTGRES_DB: wishlist_db
       TZ: Asia/Tokyo
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app_user -d app_db"]
+      test: ["CMD-SHELL", "pg_isready -U wishlist_user -d wishlist_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7.2-alpine
-    container_name: app-redis
+    container_name: wishlist-redis
     restart: unless-stopped
     ports:
       - "16379:6379"  # 変更: 6379 → 16379
@@ -41,7 +41,7 @@ services:
   # SMTP: localhost:1025
   mailpit:
     image: axllent/mailpit:latest
-    container_name: app-mailpit
+    container_name: wishlist-mailpit
     restart: unless-stopped
     ports:
       - "8025:8025"   # Web UI
@@ -54,10 +54,10 @@ services:
 
 volumes:
   postgres_data:
-    name: app_postgres_data
+    name: wishlist_postgres_data
   redis_data:
-    name: app_redis_data
+    name: wishlist_redis_data
 
 networks:
   default:
-    name: app_network
+    name: wishlist_network

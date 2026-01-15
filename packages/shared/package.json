@@ -1,5 +1,5 @@
 {
-  "name": "@repo/shared",
+  "name": "@wishlist/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "format": "biome format --write src"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    "@wishlist/typescript-config": "workspace:*"
   },
   "peerDependencies": {
     "zod": "^4.2.1"

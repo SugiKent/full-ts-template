@@ -171,7 +171,7 @@ graph TB
 ```
 project/
 ├── apps/                       # アプリケーション
-│   ├── client/                 # @repo/client - React フロントエンド
+│   ├── client/                 # @wishlist/client - React フロントエンド
 │   │   ├── src/
 │   │   │   ├── components/    # React コンポーネント
 │   │   │   ├── pages/         # ページコンポーネント
@@ -184,7 +184,7 @@ project/
 │   │   ├── public/            # 静的ファイル
 │   │   └── package.json
 │   │
-│   ├── server/                 # @repo/server - Fastify バックエンド
+│   ├── server/                 # @wishlist/server - Fastify バックエンド
 │   │   ├── src/
 │   │   │   ├── procedures/    # oRPC Procedure定義
 │   │   │   ├── routes/        # Fastifyルート定義
@@ -200,20 +200,20 @@ project/
 │   │   ├── prisma/            # Prismaスキーマ・マイグレーション
 │   │   └── package.json
 │   │
-│   └── worker/                 # @repo/worker - ジョブワーカー
+│   └── worker/                 # @wishlist/worker - ジョブワーカー
 │       ├── src/
 │       │   └── workers/       # Bee-queueワーカー定義
 │       └── package.json
 │
 ├── packages/                   # 共有パッケージ
-│   ├── shared/                 # @repo/shared - 共有型・スキーマ
+│   ├── shared/                 # @wishlist/shared - 共有型・スキーマ
 │   │   ├── src/
 │   │   │   ├── config/        # 共通設定（i18n等）
 │   │   │   ├── schemas/       # Zodスキーマ
 │   │   │   └── types/         # TypeScript型定義
 │   │   └── package.json
 │   │
-│   └── typescript-config/      # @repo/typescript-config
+│   └── typescript-config/      # @wishlist/typescript-config
 │       ├── base.json          # 共通TypeScript設定
 │       ├── client.json        # クライアント用設定
 │       └── server.json        # サーバー用設定
@@ -233,14 +233,14 @@ project/
 ### 3.2 パッケージ依存関係
 
 ```
-@repo/client ─────┬──→ @repo/shared
-                  └──→ @repo/server (型のみ)
+@wishlist/client ─────┬──→ @wishlist/shared
+                      └──→ @wishlist/server (型のみ)
 
-@repo/server ─────┬──→ @repo/shared
-                  └──→ @repo/typescript-config
+@wishlist/server ─────┬──→ @wishlist/shared
+                      └──→ @wishlist/typescript-config
 
-@repo/worker ─────┬──→ @repo/server
-                  └──→ @repo/shared
+@wishlist/worker ─────┬──→ @wishlist/server
+                      └──→ @wishlist/shared
 ```
 
 ### 3.3 Turborepo タスク
@@ -287,6 +287,7 @@ project/
 | **Class** (Component以外) | 関数・オブジェクト | 下記の関数ベース設計参照 |
 | **I/Tプレフィックス** | プレフィックスなし | `interface User {}` (IUser禁止) |
 | **Prismaモデルの直接拡張** | `$extends`機能を使用 | `prisma.$extends({ model: {...} })` |
+| **Barrel ファイル (`index.ts`)** | 直接インポート | `import { Button } from './Button'` (index.ts経由禁止) |
 
 ### 4.2 テスト戦略
 
@@ -397,8 +398,8 @@ chore: ビルド・ツール関連
 pnpm run dev
 
 # 特定パッケージの開発サーバー
-pnpm run dev --filter @repo/client
-pnpm run dev --filter @repo/server
+pnpm run dev --filter @wishlist/client
+pnpm run dev --filter @wishlist/server
 
 # 型チェック (CIで実行)
 pnpm run typecheck
@@ -645,7 +646,7 @@ railway logs
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "pnpm run start --filter @repo/server"
+startCommand = "pnpm run start --filter @wishlist/server"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

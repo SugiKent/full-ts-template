@@ -2,10 +2,11 @@
   "name": "og-images",
   "version": "1.0.0",
   "private": true,
-  "description": "OGP画像生成ツール",
+  "description": "OGP画像・ストアマーケティング画像生成ツール",
   "type": "module",
   "scripts": {
-    "generate": "tsx generate.ts"
+    "generate": "tsx generate.ts",
+    "generate:store": "tsx generate-store-images.ts"
   },
   "devDependencies": {
     "playwright-core": "^1.57.0",

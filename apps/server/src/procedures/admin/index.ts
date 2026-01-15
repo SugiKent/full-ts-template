@@ -5,7 +5,6 @@
  * プロジェクトに応じてProcedureを追加してください
  */
 
-import { adminContactRouter } from './contact.js'
 import { getDashboardStats } from './dashboard.js'
 import { adminJobsRouter } from './jobs.js'
 
@@ -18,7 +17,6 @@ export const adminRouter = {
   dashboard: {
     getStats: getDashboardStats,
   },
-  contacts: adminContactRouter,
   jobs: adminJobsRouter,
   // TODO: プロジェクトに応じてProcedureを追加
   // 例:

@@ -7,3 +7,6 @@ const rawScheme = Constants.expoConfig?.scheme
 export const APP_SCHEME: string = Array.isArray(rawScheme)
   ? (rawScheme[0] ?? 'fulltsmobile')
   : (rawScheme ?? 'fulltsmobile')
+
+// Legal document URLs
+export { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from './legal'

@@ -25,8 +25,7 @@
   "you": "あなた",
   "operator": "運営",
   "navigation": {
-    "home": "ホーム",
-    "contact": "お問い合わせ"
+    "home": "ホーム"
   },
   "userIcon": "ユーザーアイコン",
   "role": {
@@ -40,16 +39,5 @@
     "feature1": "機能1",
     "feature2": "機能2",
     "feature3": "機能3"
-  },
-  "contact": {
-    "title": "お問い合わせ",
-    "description": "ご質問やお困りのことがあればお気軽にお問い合わせください",
-    "new": "新規お問い合わせ",
-    "history": "お問い合わせ履歴",
-    "subjectPlaceholder": "お問い合わせの件名を入力してください",
-    "contentPlaceholder": "お問い合わせ内容を詳しくお書きください",
-    "messagePlaceholder": "メッセージを入力...",
-    "threadTitle": "お問い合わせ詳細",
-    "threadDescription": "お問い合わせの詳細を確認できます"
   }
 }

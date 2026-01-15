@@ -37,7 +37,7 @@ export const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
 /**
  * 翻訳ファイルのnamespace一覧
  */
-export const I18N_NAMESPACES = ['common', 'auth'] as const
+export const I18N_NAMESPACES = ['common', 'auth', 'onboarding'] as const
 export type I18nNamespace = (typeof I18N_NAMESPACES)[number]
 
 /**

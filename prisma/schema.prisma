@@ -34,9 +34,6 @@ model User {
   // Better Auth 標準リレーション
   sessions Session[]
   accounts Account[]
-
-  // お問い合わせ関連リレーション
-  contactThreads ContactThread[]
 }
 
 // セッション (Better Auth 標準)
@@ -88,60 +85,184 @@ model Verification {
 }
 
 // ========================================
-// お問い合わせ・サポート関連テーブル
+// デバイス認証テーブル
 // ========================================
 
-// お問い合わせスレッド - ユーザーからのお問い合わせ
-model ContactThread {
+// デバイス情報 - モバイルアプリの匿名認証用
+model Device {
+  id               String    @id @default(cuid())
+  deviceId         String    @unique // クライアント生成 UUID
+  platform         String? // ios, android
+  appVersion       String?
+  hasAgreedToTerms Boolean   @default(false)
+  termsAgreedAt    DateTime?
+  firstSeenAt      DateTime  @default(now())
+  lastSeenAt       DateTime  @updatedAt
+
+  accessTokens   DeviceAccessToken[]
+  userSettings   UserSettings?
+  categories     Category[]
+  wishlistItems  WishlistItem[]
+  monthlyGoals   MonthlyGoal[]
+  journalEntries JournalEntry[]
+
+  @@index([deviceId])
+}
+
+// デバイスアクセストークン - 認証用トークン管理
+model DeviceAccessToken {
+  id        String    @id @default(cuid())
+  deviceId  String
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([token])
+}
+
+// ========================================
+// アプリケーション固有のテーブル
+// ========================================
+
+// ユーザー設定
+model UserSettings {
+  id                    String    @id @default(cuid())
+  deviceId              String    @unique
+  notificationFrequency String    @default("daily") // daily, weekly, none
+  themeId               String    @default("warm") // warm, cool, nature, minimal
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+}
+
+// カテゴリー
+model Category {
   id        String   @id @default(cuid())
-  userId    String
-  category  String // technical, billing, feature_request, other
-  subject   String
-  status    String   @default("open") // open, in_progress, resolved, closed
+  deviceId  String
+  name      String
+  icon      String?
+  color     String?
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ContactMessage[]
+  device Device                 @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  items  WishlistItemCategory[]
 
-  @@index([userId])
-  @@index([status])
-  @@index([category])
+  @@index([deviceId])
 }
 
-// お問い合わせメッセージ - スレッド内の個別メッセージ
-model ContactMessage {
+// ウィッシュリストアイテム
+model WishlistItem {
+  id          String    @id @default(cuid())
+  deviceId    String
+  title       String
+  description String?
+  targetDate  DateTime?
+  priority    Int       @default(0) // 0: low, 1: medium, 2: high
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  device          Device                 @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  categories      WishlistItemCategory[]
+  steps           Step[]
+  stepSuggestions StepSuggestion[]
+  monthlyGoals    MonthlyGoal[]
+
+  @@index([deviceId])
+  @@index([deviceId, isCompleted])
+}
+
+// ウィッシュリストアイテムとカテゴリーの中間テーブル
+model WishlistItemCategory {
   id         String   @id @default(cuid())
-  threadId   String
-  senderType String // user, admin
-  senderId   String? // userId (user) または null (admin/system)
-  content    String   @db.Text
-  isRead     Boolean  @default(false)
+  itemId     String
+  categoryId String
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 
-  thread ContactThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  item     WishlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  category Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  @@index([threadId])
-  @@index([senderType])
-  @@index([isRead])
+  @@unique([itemId, categoryId])
+  @@index([itemId])
+  @@index([categoryId])
 }
 
-// ========================================
-// アプリケーション固有のテーブルをここに追加
-// ========================================
+// ステップ（アイテムの達成に必要なタスク）
+model Step {
+  id          String    @id @default(cuid())
+  itemId      String
+  title       String
+  description String?
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-// 例:
-// model Post {
-//   id        String   @id @default(cuid())
-//   title     String
-//   content   String   @db.Text
-//   published Boolean  @default(false)
-//   authorId  String
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-//
-//   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-//
-//   @@index([authorId])
-// }
+  item WishlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([itemId, isCompleted])
+}
+
+// ステップ候補（AIが事前生成した未採用のステップ）
+model StepSuggestion {
+  id          String   @id @default(cuid())
+  itemId      String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  item WishlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+}
+
+// 月次目標
+model MonthlyGoal {
+  id          String    @id @default(cuid())
+  deviceId    String
+  itemId      String?
+  title       String
+  targetMonth DateTime // 対象月（YYYY-MM-01 形式）
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  device Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  item   WishlistItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([deviceId])
+  @@index([deviceId, targetMonth])
+  @@index([itemId])
+}
+
+// ジャーナルエントリー（タイムライン機能）
+model JournalEntry {
+  id        String   @id @default(cuid())
+  deviceId  String
+  title     String? // 任意のタイトル
+  content   String // 本文（最大5000文字）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([deviceId, createdAt])
+}

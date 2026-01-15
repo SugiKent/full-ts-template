@@ -7,7 +7,7 @@
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { RouterClient } from '@orpc/server'
-import type { UserRouter } from '@repo/server/procedures/user'
+import type { UserRouter } from '@wishlist/server/procedures/user'
 
 /**
  * oRPC Linkの作成
@@ -28,7 +28,7 @@ const link = new RPCLink({
  *
  * 使用例:
  * ```ts
- * const result = await userOrpcClient.contact.getThreads({ userId, page: 1, limit: 50 })
+ * const result = await userOrpcClient.auth.register({ deviceId: '...', platform: 'ios' })
  * // resultは完全に型安全
  * ```
  */

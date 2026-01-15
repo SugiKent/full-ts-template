@@ -6,10 +6,11 @@
     },
     "playwright-test": {
       "command": "npx",
-      "args": [
-        "playwright",
-        "run-test-mcp-server"
-      ]
+      "args": ["playwright", "run-test-mcp-server"]
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["-m", "gpt-5.2-codex", "mcp-server"]
     }
   }
 }

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Wishlist - AIステップ提案</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(180deg, #F3E8FF 0%, #FAF5FF 50%, #FFFFFF 100%);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 8% 6%;
+    }
+
+    /* キャッチコピーエリア */
+    .catchphrase {
+      text-align: center;
+      margin-bottom: 5%;
+    }
+
+    .catchphrase h1 {
+      font-size: 6vw;
+      font-weight: 700;
+      color: #292524;
+      line-height: 1.3;
+      margin-bottom: 3%;
+    }
+
+    .catchphrase .highlight {
+      background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .catchphrase p {
+      font-size: 3.5vw;
+      color: #78716C;
+      font-weight: 500;
+    }
+
+    /* モックアプリ画面 */
+    .app-screen {
+      flex: 1;
+      background: #FFFFFF;
+      border-radius: 6vw;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3% 5%;
+      font-size: 2.8vw;
+      font-weight: 600;
+      color: #292524;
+    }
+
+    .status-bar-icons {
+      display: flex;
+      gap: 1vw;
+    }
+
+    .app-content {
+      flex: 1;
+      padding: 0 5%;
+      overflow: hidden;
+    }
+
+    /* ターゲットアイテム */
+    .target-item {
+      background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
+      border-radius: 3vw;
+      padding: 4%;
+      margin-bottom: 4%;
+      display: flex;
+      align-items: center;
+      gap: 3%;
+    }
+
+    .target-emoji {
+      font-size: 8vw;
+    }
+
+    .target-info h3 {
+      font-size: 4vw;
+      font-weight: 600;
+      color: #292524;
+      margin-bottom: 1%;
+    }
+
+    .target-info p {
+      font-size: 2.8vw;
+      color: #78716C;
+    }
+
+    /* AIバッジ */
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 1%;
+      background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+      color: white;
+      padding: 1.5% 3%;
+      border-radius: 2vw;
+      font-size: 2.5vw;
+      font-weight: 600;
+      margin-bottom: 3%;
+    }
+
+    .ai-badge svg {
+      width: 3vw;
+      height: 3vw;
+    }
+
+    /* ステップリスト */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5%;
+    }
+
+    .step-item {
+      background: #F8FAFC;
+      border: 2px solid #E2E8F0;
+      border-radius: 2.5vw;
+      padding: 3.5%;
+      display: flex;
+      align-items: center;
+      gap: 3%;
+    }
+
+    .step-item.selected {
+      background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+      border-color: #A855F7;
+    }
+
+    .step-checkbox {
+      width: 5vw;
+      height: 5vw;
+      border-radius: 1.2vw;
+      border: 2px solid #CBD5E1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-item.selected .step-checkbox {
+      background: #A855F7;
+      border-color: #A855F7;
+      color: white;
+    }
+
+    .step-checkbox svg {
+      width: 3vw;
+      height: 3vw;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 3vw;
+      font-weight: 500;
+      color: #334155;
+    }
+
+    /* もっとやれるボタン */
+    .more-button {
+      background: white;
+      border: 2px dashed #A855F7;
+      border-radius: 2vw;
+      padding: 3%;
+      text-align: center;
+      color: #A855F7;
+      font-weight: 600;
+      font-size: 3vw;
+      margin-top: 3%;
+    }
+
+    /* CTAエリア */
+    .cta-area {
+      padding: 5%;
+      background: white;
+    }
+
+    .cta-button {
+      width: 100%;
+      background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+      color: white;
+      border: none;
+      border-radius: 2vw;
+      padding: 4%;
+      font-size: 3.5vw;
+      font-weight: 600;
+    }
+
+    /* アイコンSVG */
+    .icon {
+      width: 4vw;
+      height: 4vw;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- キャッチコピー -->
+    <div class="catchphrase">
+      <h1><span class="highlight">AI</span>が<br>最初の一歩を提案</h1>
+      <p>低ハードルなステップで無理なく始められる</p>
+    </div>
+
+    <!-- モックアプリ画面 -->
+    <div class="app-screen">
+      <!-- ステータスバー -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-bar-icons">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+          </svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
+            <line x1="23" y1="13" x2="23" y2="11"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- アプリコンテンツ -->
+      <div class="app-content">
+        <!-- ターゲットアイテム -->
+        <div class="target-item">
+          <div class="target-emoji">🌍</div>
+          <div class="target-info">
+            <h3>ヨーロッパ旅行の計画</h3>
+            <p>今月やることに追加しました</p>
+          </div>
+        </div>
+
+        <!-- AIバッジ -->
+        <div class="ai-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          AIが提案するステップ
+        </div>
+
+        <!-- ステップリスト -->
+        <div class="steps-list">
+          <div class="step-item selected">
+            <div class="step-checkbox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">旅行雑誌を買う 📖</div>
+            </div>
+          </div>
+          <div class="step-item selected">
+            <div class="step-checkbox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">YouTubeで行き先を調べる 🎬</div>
+            </div>
+          </div>
+          <div class="step-item selected">
+            <div class="step-checkbox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="step-content">
+              <div class="step-title">パスポートの有効期限を確認 🛂</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-checkbox"></div>
+            <div class="step-content">
+              <div class="step-title">予算を計算する 💰</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-checkbox"></div>
+            <div class="step-content">
+              <div class="step-title">候補の国を3つ絞る 🗺️</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- もっとやれるボタン -->
+        <div class="more-button">
+          ✨ もっとやれる！（+5ステップ追加）
+        </div>
+      </div>
+
+      <!-- CTAエリア -->
+      <div class="cta-area">
+        <div class="cta-button">3つのステップで始める →</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

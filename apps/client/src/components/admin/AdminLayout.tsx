@@ -21,7 +21,6 @@ type AdminLayoutProps = {
 
 const defaultNavItems: NavItem[] = [
   { path: 'dashboard', label: 'ダッシュボード', route: '/admin/dashboard' },
-  { path: 'contacts', label: 'お問い合わせ', route: '/admin/contacts' },
 ]
 
 export function AdminLayout({

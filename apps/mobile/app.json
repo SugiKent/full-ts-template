@@ -1,25 +1,28 @@
 {
   "expo": {
-    "name": "Full-TS Mobile",
-    "slug": "full-ts-mobile",
+    "name": "My Wishlist",
+    "slug": "wishlist-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "fulltsmobile",
+    "scheme": "my-wishlist",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.fulltsmobile"
+      "bundleIdentifier": "bike.sugiken.mywishlist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.example.fulltsmobile"
+      "package": "bike.sugiken.mywishlist"
     },
-    "plugins": ["expo-dev-client", "expo-router", "expo-localization", "expo-secure-store"],
+    "plugins": ["expo-dev-client", "expo-router", "expo-secure-store"],
     "experiments": {
       "typedRoutes": true
     },
@@ -27,6 +30,9 @@
       "apiUrl": "http://localhost:8080",
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "74a2bf1a-76ec-4698-b6f6-336b30cda8b3"
       }
     }
   }

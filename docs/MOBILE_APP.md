@@ -5,22 +5,26 @@
 **関連ドキュメント:**
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - 全体アーキテクチャ
 - [BACKEND.md](./BACKEND.md) - バックエンド開発規約
-- [FRONTEND.md](./FRONTEND.md) - Web フロントエンド開発規約
-- [AUTH.md](./AUTH.md) - 認証実装
+- [FRONTEND.md](./FRONTEND.md) - Web フロントエンド開発規約（管理画面）
+- [AUTH.md](./AUTH.md) - 管理画面の認証実装（Better-Auth）
+
+> **注意:** モバイルアプリは Better-Auth を使用せず、Device ID ベースの匿名認証を採用しています。詳細は「7. 認証フロー」を参照してください。
 
 ## 目次
 
 1. [技術スタック](#1-技術スタック)
 2. [プロジェクト構造](#2-プロジェクト構造)
 3. [セットアップ手順](#3-セットアップ手順)
-4. [oRPC クライアント設計](#4-orpc-クライアント設計)
-5. [認証フロー](#5-認証フロー)
-6. [NativeWind (Tailwind CSS)](#6-nativewind-tailwind-css)
-7. [多言語対応（i18n）](#7-多言語対応i18n)
-8. [ナビゲーション設計](#8-ナビゲーション設計)
-9. [状態管理](#9-状態管理)
-10. [開発・ビルド・デプロイ](#10-開発ビルドデプロイ)
-11. [制約事項と注意点](#11-制約事項と注意点)
+4. [データ管理原則](#4-データ管理原則)
+5. [API バージョニング](#5-api-バージョニング)
+6. [oRPC クライアント設計](#6-orpc-クライアント設計)
+7. [認証フロー](#7-認証フロー)
+8. [オンボーディングフロー](#8-オンボーディングフロー)
+9. [NativeWind (Tailwind CSS)](#9-nativewind-tailwind-css)
+10. [ナビゲーション設計](#10-ナビゲーション設計)
+11. [状態管理](#11-状態管理)
+12. [開発・ビルド・デプロイ](#12-開発ビルドデプロイ)
+13. [制約事項と注意点](#13-制約事項と注意点)
 
 ---
 
@@ -36,8 +40,7 @@
 | スタイリング | NativeWind | v4 | Tailwind CSS for React Native |
 | API通信 | oRPC | 1.13+ | 型安全なRPC |
 | データフェッチ | TanStack Query | v5 | キャッシュ・再フェッチ自動化 |
-| 認証 | Better-Auth | 1.3+ | @better-auth/expo プラグイン |
-| 多言語 | i18next | - | react-i18next + expo-localization |
+| 認証 | Device ID 認証 | - | 匿名認証（Better-Auth 非依存） |
 | ストレージ | expo-secure-store | - | セッショントークン保存 |
 | ビルド | EAS Build | - | クラウドビルド（Mac 不要） |
 | CI/CD | EAS Workflows | - | GitHub 連携 |
@@ -58,8 +61,8 @@
 | スタイリング | Tailwind CSS v4 | NativeWind v4 |
 | ルーティング | React Router | Expo Router |
 | API通信 | oRPC + fetch | oRPC + expo/fetch |
-| 認証 | Cookie ベース | SecureStore ベース |
-| 型共有 | @repo/shared | @repo/shared |
+| 認証 | Better-Auth (Cookie) | Device ID 認証 (SecureStore) |
+| 型共有 | @wishlist/shared | @wishlist/shared |
 
 ---
 
@@ -90,10 +93,9 @@ apps/mobile/
 │   │   ├── _layout.tsx           # タブレイアウト
 │   │   ├── index.tsx             # ホーム画面
 │   │   └── settings.tsx          # 設定画面
-│   ├── (auth)/                   # 認証フローグループ
-│   │   ├── _layout.tsx           # 認証レイアウト
-│   │   ├── login.tsx             # ログイン画面
-│   │   └── magic-link.tsx        # マジックリンク確認
+│   ├── (onboarding)/             # オンボーディングフローグループ
+│   │   ├── _layout.tsx           # オンボーディングレイアウト
+│   │   └── index.tsx             # オンボーディング画面
 │   ├── _layout.tsx               # ルートレイアウト
 │   └── +not-found.tsx            # 404 画面
 ├── src/
@@ -101,13 +103,12 @@ apps/mobile/
 │   │   ├── ui/                   # 基本UIコンポーネント
 │   │   └── features/             # 機能別コンポーネント
 │   ├── hooks/                    # カスタムフック
-│   │   ├── useAuth.ts            # 認証フック
 │   │   └── useOrpc.ts            # oRPC フック
 │   ├── services/                 # 外部サービス連携
 │   │   ├── orpc-client.ts        # oRPC クライアント
-│   │   └── auth-client.ts        # Better-Auth クライアント
+│   │   └── device.service.ts     # デバイス認証サービス
 │   ├── providers/                # Context プロバイダー
-│   │   ├── AuthProvider.tsx
+│   │   ├── AuthProvider.tsx      # Device ID 認証プロバイダー
 │   │   └── QueryProvider.tsx
 │   ├── utils/                    # ユーティリティ
 │   └── constants/                # 定数
@@ -174,7 +175,7 @@ cd mobile
 
 ```json
 {
-  "name": "@repo/mobile",
+  "name": "@wishlist/mobile",
   "version": "0.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -188,7 +189,7 @@ cd mobile
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/shared": "workspace:*",
+    "@wishlist/shared": "workspace:*",
     "expo": "~54.0.0",
     "expo-router": "~4.0.0",
     "expo-secure-store": "~14.0.0",
@@ -197,15 +198,12 @@ cd mobile
     "react-native": "0.83.0",
     "@orpc/client": "^1.13.0",
     "@tanstack/react-query": "^5.0.0",
-    "better-auth": "^1.3.0",
-    "@better-auth/expo": "^1.3.0",
-    "i18next": "^24.0.0",
-    "react-i18next": "^15.0.0",
+    "expo-crypto": "~14.0.0",
     "nativewind": "^4.0.0"
   },
   "devDependencies": {
-    "@repo/server": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@wishlist/server": "workspace:*",
+    "@wishlist/typescript-config": "workspace:*",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0"
   }
@@ -223,7 +221,7 @@ node-linker=hoisted
 
 ```json
 {
-  "extends": "@repo/typescript-config/base.json",
+  "extends": "@wishlist/typescript-config/base.json",
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
@@ -288,52 +286,154 @@ eas build --profile development --platform all
 # または QR コードからデバイスにインストール
 
 # 開発サーバー起動
-pnpm --filter @repo/mobile dev
+pnpm --filter @wishlist/mobile dev
 ```
 
 > **初回のみ:** Development Build の作成には 10〜20 分程度かかります。ビルド完了後は、JS の変更のみで高速にイテレーションできます。
 
 ---
 
-## 4. oRPC クライアント設計
+## 4. データ管理原則
 
-### 4.1 基本設定
+### 4.1 Single Source of Truth（SSOT）
+
+モバイルアプリは **サーバーを唯一のデータソース（Single Source of Truth）** として扱います。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    データ管理原則                            │
+├─────────────────────────────────────────────────────────────┤
+│  サーバー = SSOT（Single Source of Truth）                  │
+│  - すべてのデータはサーバーに保存                            │
+│  - クライアントはサーバーからデータを取得して表示             │
+│  - ローカルストレージへのデータ永続化は原則禁止               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 ストレージの使い分け
+
+| ストレージ | 用途 | 例 |
+|-----------|------|-----|
+| **サーバー（SSOT）** | アプリデータの永続化 | ウィッシュリスト、カテゴリー、ステップ、設定 |
+| **SecureStore** | 認証情報のみ | Device ID、Access Token、Token 有効期限 |
+| **React State** | 一時的なデータ保持 | オンボーディング中の入力データ、フォーム状態 |
+| **TanStack Query Cache** | サーバーデータのキャッシュ | API レスポンスのメモリキャッシュ |
+
+### 4.3 禁止事項
+
+```typescript
+// ❌ 禁止: AsyncStorage へのアプリデータ保存
+import AsyncStorage from '@react-native-async-storage/async-storage'
+await AsyncStorage.setItem('wishlist', JSON.stringify(items))
+
+// ❌ 禁止: MMKV へのアプリデータ保存
+import { MMKV } from 'react-native-mmkv'
+storage.set('categories', JSON.stringify(categories))
+
+// ✅ 許可: サーバーへのデータ保存
+await orpcClient.wishlistItem.create({ title, categoryIds })
+
+// ✅ 許可: SecureStore への認証情報保存
+await SecureStore.setItemAsync('access_token', token)
+```
+
+### 4.4 オフライン対応（将来計画）
+
+現時点ではオフラインファースト設計は **Non-Goals** です。将来的に以下を検討予定：
+
+- オフライン時のデータキャッシュ
+- 複数デバイス間の同期
+- リアルタイム同期
+
+---
+
+## 5. API バージョニング
+
+### 5.1 パスベースのバージョニング
+
+モバイルアプリは API の後方互換性を維持するため、パスベースのバージョニングを採用しています。
+
+```
+/api/user/v1/rpc/*  ← 現行バージョン（破壊的変更禁止）
+/api/user/v2/rpc/*  ← 新バージョン（必要に応じて追加）
+```
+
+### 5.2 バージョニングルール
+
+| ルール | 説明 |
+|--------|------|
+| **v1 は破壊的変更禁止** | フィールド追加は OK、削除/変更は NG |
+| **新機能は v1 に追加** | 後方互換性がある限り既存バージョンに追加 |
+| **破壊的変更は新バージョン** | 必要な場合のみ v2 を作成 |
+| **旧バージョンは維持** | 古いアプリのサポートのため |
+
+### 5.3 アプリバージョン追跡
+
+サーバーはクライアントのバージョン情報を追跡します。
+
+**ヘッダー形式:**
+```
+X-App-Version: 1.2.0          # SemVer 形式
+X-OS-Version: iOS/17.0        # {OS}/{Version} 形式
+```
+
+**用途:**
+- アプリの利用状況把握
+- バージョン別の問題特定
+- 非推奨バージョンの利用状況確認
+
+---
+
+## 6. oRPC クライアント設計
+
+### 6.1 基本設定
 
 ```typescript
 // apps/mobile/src/services/orpc-client.ts
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { RouterClient } from '@orpc/server'
-import type { UserRouter } from '@repo/server/procedures/user'
-import * as SecureStore from 'expo-secure-store'
-import Constants from 'expo-constants'
+import type { UserRouter } from '@wishlist/server/procedures/user'
+import { API_URL, APP_VERSION } from '@/constants'
+import { Platform } from 'react-native'
+import { getAccessToken } from './device.service'
 
-// 環境変数からAPI URLを取得
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? 'http://localhost:8080'
+/**
+ * OS バージョンを取得
+ */
+function getOSVersion(): string {
+  const os = Platform.OS === 'ios' ? 'iOS' : 'Android'
+  const version = Platform.Version
+  return `${os}/${version}`
+}
 
 /**
  * expo/fetch を使用した RPCLink
  * Event Iterator をサポート
  */
 const link = new RPCLink({
-  url: `${API_URL}/api/user/rpc`,
+  url: `${API_URL}/api/user/v1/rpc`,  // v1 バージョニング
   async fetch(request, init) {
     // expo/fetch を動的インポート
     const { fetch } = await import('expo/fetch')
 
-    // SecureStore からトークンを取得
-    const token = await SecureStore.getItemAsync('session_token')
+    // device.service からアクセストークンを取得
+    const token = await getAccessToken()
 
     const headers = new Headers(request.headers)
     if (token) {
       headers.set('Authorization', `Bearer ${token}`)
     }
 
+    // アプリバージョン追跡ヘッダー
+    headers.set('X-App-Version', APP_VERSION)
+    headers.set('X-OS-Version', getOSVersion())
+
     return fetch(request.url, {
       body: await request.blob(),
       headers,
       method: request.method,
-      signal: request.signal,
+      ...(request.signal && { signal: request.signal as unknown as AbortSignal }),
       ...init,
     })
   },
@@ -345,7 +445,7 @@ const link = new RPCLink({
 export const orpcClient: RouterClient<UserRouter> = createORPCClient(link)
 ```
 
-### 4.2 TanStack Query との統合
+### 6.2 TanStack Query との統合
 
 ```typescript
 // apps/mobile/src/providers/QueryProvider.tsx
@@ -370,7 +470,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 }
 ```
 
-### 4.3 カスタムフックの実装
+### 6.3 カスタムフックの実装
 
 ```typescript
 // apps/mobile/src/hooks/useOrpc.ts
@@ -404,7 +504,7 @@ export function useSendMessage() {
 }
 ```
 
-### 4.4 コンポーネントでの使用例
+### 6.4 コンポーネントでの使用例
 
 ```tsx
 // apps/mobile/app/(tabs)/contacts.tsx
@@ -447,124 +547,238 @@ export default function ContactsScreen() {
 
 ---
 
-## 5. 認証フロー
+## 7. 認証フロー
 
-### 5.1 Better-Auth クライアント設定
+モバイルアプリは **Device ID ベースの匿名認証** を採用しています。Better-Auth には依存しません。
 
-```typescript
-// apps/mobile/src/services/auth-client.ts
-import { createAuthClient } from 'better-auth/react'
-import { expoClient } from '@better-auth/expo'
-import * as SecureStore from 'expo-secure-store'
-import Constants from 'expo-constants'
+### 7.1 認証アーキテクチャ
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? 'http://localhost:8080'
-const APP_SCHEME = Constants.expoConfig?.scheme ?? 'myapp'
-
-export const authClient = createAuthClient({
-  baseURL: API_URL,
-  plugins: [
-    expoClient({
-      // アプリの URL スキーム
-      scheme: APP_SCHEME,
-      // セッションストレージ
-      storagePrefix: 'auth_',
-      storage: SecureStore,
-    }),
-  ],
-})
-
-// 認証ヘルパー関数をエクスポート
-export const {
-  signIn,
-  signOut,
-  useSession,
-  getSession,
-} = authClient
+```
+┌─────────────────────────────────────┐
+│         Device ID 認証              │
+│  - UUID v4 による一意識別           │
+│  - SecureStore にトークン保存       │
+│  - 90日有効のアクセストークン       │
+│  - サーバー側で Device テーブル管理 │
+└─────────────────────────────────────┘
 ```
 
-### 5.2 app.json のディープリンク設定
+**認証フロー:**
+1. アプリ起動時に Device ID を取得（なければ UUID v4 を生成）
+2. Device ID をサーバーに登録してアクセストークンを取得
+3. トークンを SecureStore に保存
+4. API リクエスト時に Authorization ヘッダーにトークンを付与
+5. トークン期限切れ時（24時間前から検出）は自動更新
 
-```json
-{
-  "expo": {
-    "name": "MyApp",
-    "slug": "myapp",
-    "scheme": "myapp",
-    "ios": {
-      "bundleIdentifier": "com.example.myapp",
-      "associatedDomains": ["applinks:yourdomain.com"]
-    },
-    "android": {
-      "package": "com.example.myapp",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "yourdomain.com",
-              "pathPrefix": "/auth"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
-    },
-    "extra": {
-      "apiUrl": "http://localhost:8080"
-    }
+### 7.2 デバイスサービス
+
+```typescript
+// apps/mobile/src/services/device.service.ts
+import * as Crypto from 'expo-crypto'
+import * as SecureStore from 'expo-secure-store'
+import { Platform } from 'react-native'
+
+// SecureStore キー
+const DEVICE_ID_KEY = 'device_id'
+const ACCESS_TOKEN_KEY = 'access_token'
+const TOKEN_EXPIRES_AT_KEY = 'token_expires_at'
+
+/**
+ * Device ID を取得（存在しない場合は生成）
+ */
+export async function getOrCreateDeviceId(): Promise<string> {
+  const existingId = await SecureStore.getItemAsync(DEVICE_ID_KEY)
+
+  if (existingId) {
+    return existingId
   }
+
+  // UUID v4 を生成
+  const newId = Crypto.randomUUID()
+  await SecureStore.setItemAsync(DEVICE_ID_KEY, newId)
+
+  return newId
+}
+
+/**
+ * アクセストークンを取得
+ */
+export async function getAccessToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(ACCESS_TOKEN_KEY)
+}
+
+/**
+ * アクセストークンを保存
+ */
+export async function saveAccessToken(token: string, expiresAt: Date): Promise<void> {
+  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token)
+  await SecureStore.setItemAsync(TOKEN_EXPIRES_AT_KEY, expiresAt.toISOString())
+}
+
+/**
+ * トークンが期限切れかどうかをチェック
+ */
+export async function isTokenExpired(): Promise<boolean> {
+  const expiresAtStr = await SecureStore.getItemAsync(TOKEN_EXPIRES_AT_KEY)
+
+  if (!expiresAtStr) {
+    return true
+  }
+
+  const expiresAt = new Date(expiresAtStr)
+  // 24時間前から期限切れとみなす（余裕を持たせる）
+  const bufferMs = 24 * 60 * 60 * 1000
+  return expiresAt.getTime() - bufferMs < Date.now()
+}
+
+/**
+ * 認証データをクリア
+ */
+export async function clearAuthData(): Promise<void> {
+  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY)
+  await SecureStore.deleteItemAsync(TOKEN_EXPIRES_AT_KEY)
+}
+
+/**
+ * プラットフォームを取得
+ */
+export function getPlatform(): 'ios' | 'android' {
+  return Platform.OS === 'ios' ? 'ios' : 'android'
 }
 ```
 
-### 5.3 認証プロバイダー
+### 7.3 認証プロバイダー
 
 ```tsx
 // apps/mobile/src/providers/AuthProvider.tsx
-import { createContext, useContext, ReactNode, useEffect, useState } from 'react'
-import { useSession, signOut, getSession } from '@/services/auth-client'
-import { useRouter, useSegments } from 'expo-router'
+import type { ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import {
+  clearAuthData,
+  getAccessToken,
+  getOrCreateDeviceId,
+  getPlatform,
+  isTokenExpired,
+  saveAccessToken,
+} from '../services/device.service'
+import { orpcClient } from '../services/orpc-client'
 
 interface AuthContextType {
-  user: User | null
+  /** デバイス ID */
+  deviceId: string | null
+  /** 認証済みかどうか */
+  isAuthenticated: boolean
+  /** 認証処理中かどうか */
   isLoading: boolean
-  logout: () => Promise<void>
+  /** エラー */
+  error: Error | null
+  /** 認証状態を更新 */
+  refreshAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, isPending } = useSession()
-  const router = useRouter()
-  const segments = useSegments()
+  const [deviceId, setDeviceId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    if (isPending) return
+  /**
+   * デバイスを登録してトークンを取得
+   */
+  const registerDevice = useCallback(async (deviceIdToRegister: string) => {
+    const result = await orpcClient.auth.registerDevice({
+      deviceId: deviceIdToRegister,
+      platform: getPlatform(),
+    })
 
-    const inAuthGroup = segments[0] === '(auth)'
-
-    if (!session?.user && !inAuthGroup) {
-      // 未認証ユーザーをログイン画面へリダイレクト
-      router.replace('/(auth)/login')
-    } else if (session?.user && inAuthGroup) {
-      // 認証済みユーザーをホーム画面へリダイレクト
-      router.replace('/(tabs)')
+    if (!result.success || !result.accessToken || !result.expiresAt) {
+      throw new Error(result.error || 'Failed to register device')
     }
-  }, [session, isPending, segments])
 
-  const logout = async () => {
-    await signOut()
-    router.replace('/(auth)/login')
-  }
+    await saveAccessToken(result.accessToken, result.expiresAt)
+    return true
+  }, [])
+
+  /**
+   * トークンを更新
+   */
+  const refreshToken = useCallback(async (deviceIdToRefresh: string) => {
+    const result = await orpcClient.auth.refreshToken({
+      deviceId: deviceIdToRefresh,
+    })
+
+    if (!result.success || !result.accessToken || !result.expiresAt) {
+      throw new Error(result.error || 'Failed to refresh token')
+    }
+
+    await saveAccessToken(result.accessToken, result.expiresAt)
+    return true
+  }, [])
+
+  /**
+   * 認証を初期化
+   */
+  const initializeAuth = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Device ID を取得または生成
+      const id = await getOrCreateDeviceId()
+      setDeviceId(id)
+
+      // 既存のトークンを確認
+      const existingToken = await getAccessToken()
+
+      if (existingToken) {
+        // トークンが期限切れかチェック
+        const expired = await isTokenExpired()
+
+        if (expired) {
+          // トークンを更新
+          await refreshToken(id)
+        }
+        // トークンが有効な場合はそのまま使用
+      } else {
+        // トークンがない場合はデバイスを登録
+        await registerDevice(id)
+      }
+
+      setIsAuthenticated(true)
+    } catch (err) {
+      console.error('Auth initialization failed:', err)
+      setError(err instanceof Error ? err : new Error('Authentication failed'))
+      setIsAuthenticated(false)
+
+      // 認証データをクリアして再試行可能にする
+      await clearAuthData()
+    } finally {
+      setIsLoading(false)
+    }
+  }, [registerDevice, refreshToken])
+
+  /**
+   * 認証状態を更新（リトライ用）
+   */
+  const refreshAuth = useCallback(async () => {
+    await initializeAuth()
+  }, [initializeAuth])
+
+  // アプリ起動時に認証を初期化
+  useEffect(() => {
+    initializeAuth()
+  }, [initializeAuth])
 
   return (
     <AuthContext.Provider
       value={{
-        user: session?.user ?? null,
-        isLoading: isPending,
-        logout,
+        deviceId,
+        isAuthenticated,
+        isLoading,
+        error,
+        refreshAuth,
       }}
     >
       {children}
@@ -581,90 +795,174 @@ export function useAuth() {
 }
 ```
 
-### 5.4 マジックリンクログイン画面
+### 7.4 サーバー側 API（参考）
+
+サーバー側のデバイス認証 API は以下のエンドポイントを提供します:
+
+| エンドポイント | 説明 |
+|---------------|------|
+| `auth.registerDevice` | デバイス登録とトークン発行 |
+| `auth.refreshToken` | トークン更新 |
+| `auth.getDeviceStatus` | デバイス状態取得 |
+| `auth.agreeToTerms` | 利用規約同意記録 |
+
+詳細は `apps/server/src/procedures/user/v1/device-auth.ts` を参照してください。
+
+---
+
+## 8. オンボーディングフロー
+
+オンボーディングフローはサーバーと連携し、ユーザーデータを永続化します。
+
+### 8.1 フローの概要
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    オンボーディングフロー                                  │
+├──────────────────────────────────────────────────────────────────────────┤
+│  splash → categories → items → steps → monthly → notifications           │
+│     │                                                    │               │
+│     │  利用規約同意                                        │               │
+│     └─── agreeToTerms API ─────────────────────────────────┘               │
+│                                                          │               │
+│     │  オンボーディング完了                                 │               │
+│     └─────────────────────────────────── completeOnboarding API ────────┘ │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 データの一時保持
+
+オンボーディング中のデータは **React State（OnboardingProvider）** で一時保持します。
+
+```typescript
+// apps/mobile/src/providers/OnboardingProvider.tsx
+interface OnboardingState {
+  categories: string[]           // 選択したカテゴリー ID
+  items: OnboardingItem[]        // 作成したウィッシュリストアイテム
+  stepsByItem: Record<string, Step[]>  // アイテムごとのステップ
+  monthlyGoals: string[]         // 今月やることに設定したアイテム ID
+  notificationFrequency: string  // 通知頻度
+}
+```
+
+**重要:**
+- AsyncStorage や MMKV への保存は **禁止**
+- サーバーが SSOT のため、ローカル永続化は不要
+- アプリ終了時にデータは消失（再度オンボーディングから開始）
+
+### 8.3 サーバー連携ポイント
+
+| 画面 | API 呼び出し | タイミング |
+|------|-------------|----------|
+| terms | `agreeToTerms` | 同意ボタン押下時 |
+| steps | `suggestSteps` | AI ステップ提案取得時 |
+| notifications | `completeOnboarding` | 完了ボタン押下時 |
+
+### 8.4 completeOnboarding API
+
+オンボーディング完了時に全データを一括でサーバーに保存します。
+
+```typescript
+// API 呼び出し例
+const result = await orpcClient.onboarding.complete({
+  categories: selectedCategoryIds,
+  items: items.map(item => ({
+    clientId: item.id,  // クライアント側の一時 ID
+    title: item.title,
+    categoryIds: item.categoryIds,
+  })),
+  stepsByItem: Object.fromEntries(
+    Object.entries(stepsByItem).map(([itemClientId, steps]) => [
+      itemClientId,
+      steps.map(step => ({ title: step.title })),
+    ])
+  ),
+  monthlyGoals: monthlyGoalItemClientIds,
+  notificationFrequency,
+})
+
+// レスポンス: ID マッピング
+// {
+//   categoryIdMap: { 'client-id-1': 'server-id-abc', ... },
+//   itemIdMap: { 'item-1234': 'server-id-xyz', ... },
+// }
+```
+
+### 8.5 AI ステップ提案
+
+steps 画面では、サーバー側の LLM と連携してステップを自動提案します。
+
+```typescript
+// AI ステップ提案 API
+const result = await orpcClient.stepSuggestion.suggest({
+  itemTitle: 'ヨーロッパ旅行に行く',
+  categoryIds: ['travel'],
+  existingSteps: [],      // 既存ステップ（重複回避用）
+  completedSteps: [],     // 完了済みステップ（次のアクション提案用）
+})
+
+// レスポンス
+// {
+//   steps: [
+//     { title: 'パスポートの有効期限を確認する' },
+//     { title: '航空券を検索・比較する' },
+//     { title: '宿泊先を予約する' },
+//   ]
+// }
+```
+
+### 8.6 エラーハンドリング
+
+ネットワークエラー時はリトライ UI を表示します。
 
 ```tsx
-// apps/mobile/app/(auth)/login.tsx
-import { useState } from 'react'
-import { View, Text, TextInput, Pressable, Alert } from 'react-native'
-import { authClient } from '@/services/auth-client'
-import { useTranslation } from 'react-i18next'
-
-export default function LoginScreen() {
-  const { t } = useTranslation('auth')
-  const [email, setEmail] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSent, setIsSent] = useState(false)
-
-  const handleSendMagicLink = async () => {
-    if (!email) return
-
-    setIsLoading(true)
-    try {
-      await authClient.signIn.magicLink({ email })
-      setIsSent(true)
-      Alert.alert(
-        t('magicLink.sent'),
-        t('magicLink.checkEmail')
-      )
-    } catch (error) {
-      Alert.alert(
-        t('error.title'),
-        t('error.sendFailed')
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+// エラー時の UI 例
+function OnboardingErrorDialog({ error, onRetry }: Props) {
   return (
-    <View className="flex-1 justify-center px-6 bg-white">
-      <Text className="text-3xl font-bold text-center mb-8">
-        {t('login.title')}
+    <View className="flex-1 items-center justify-center p-6">
+      <Text className="text-lg font-bold text-red-600 mb-4">
+        {t('onboarding.error.title')}
       </Text>
-
-      {!isSent ? (
-        <>
-          <TextInput
-            className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
-            placeholder={t('login.emailPlaceholder')}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
-
-          <Pressable
-            className="bg-blue-600 rounded-lg py-3 items-center disabled:bg-gray-400"
-            onPress={handleSendMagicLink}
-            disabled={isLoading || !email}
-          >
-            <Text className="text-white font-semibold">
-              {isLoading ? t('common.loading') : t('login.sendMagicLink')}
-            </Text>
-          </Pressable>
-        </>
-      ) : (
-        <View className="items-center">
-          <Text className="text-lg text-center text-gray-600 mb-4">
-            {t('magicLink.instructions')}
-          </Text>
-          <Pressable onPress={() => setIsSent(false)}>
-            <Text className="text-blue-600">{t('login.resend')}</Text>
-          </Pressable>
-        </View>
-      )}
+      <Text className="text-gray-600 text-center mb-6">
+        {t('onboarding.error.message')}
+      </Text>
+      <Pressable
+        className="bg-blue-600 rounded-lg py-3 px-8"
+        onPress={onRetry}
+      >
+        <Text className="text-white font-semibold">
+          {t('onboarding.error.retry')}
+        </Text>
+      </Pressable>
     </View>
   )
 }
 ```
 
+### 8.7 オンボーディング完了状態の判定
+
+アプリ起動時にサーバーからオンボーディング完了状態を取得します。
+
+```typescript
+// AuthProvider 内での判定
+const checkOnboardingStatus = async () => {
+  const status = await orpcClient.auth.getDeviceStatus()
+
+  if (status.onboardingCompletedAt) {
+    // ホーム画面へ
+    router.replace('/(tabs)')
+  } else {
+    // オンボーディング画面へ
+    router.replace('/(onboarding)')
+  }
+}
+```
+
 ---
 
-## 6. NativeWind (Tailwind CSS)
+## 9. NativeWind (Tailwind CSS)
 
-### 6.1 セットアップ
+### 9.1 セットアップ
 
 **1. 依存関係インストール:**
 
@@ -728,7 +1026,7 @@ module.exports = function (api) {
 @tailwind utilities;
 ```
 
-### 6.2 使用例
+### 9.2 使用例
 
 ```tsx
 // NativeWind を使用したコンポーネント
@@ -754,7 +1052,7 @@ function MyCard({ children }: { children: React.ReactNode }) {
 }
 ```
 
-### 6.3 Web版との互換性
+### 9.3 Web版との互換性
 
 | Tailwind クラス | Web | React Native | 備考 |
 |----------------|-----|--------------|------|
@@ -767,7 +1065,7 @@ function MyCard({ children }: { children: React.ReactNode }) {
 | `grid` | OK | 制限あり | Flexbox 推奨 |
 | `gap-*` | OK | OK | RN 0.71+ |
 
-### 6.4 プラットフォーム固有のスタイル
+### 9.4 プラットフォーム固有のスタイル
 
 ```tsx
 import { Platform, View, Text } from 'react-native'
@@ -788,95 +1086,15 @@ function PlatformCard() {
 
 ---
 
-## 7. 多言語対応（i18n）
+## 10. ナビゲーション設計
 
-### 7.1 設定
-
-```typescript
-// apps/mobile/src/i18n/index.ts
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
-import * as Localization from 'expo-localization'
-import {
-  SUPPORTED_LANGUAGES,
-  FALLBACK_LANGUAGE,
-  DEFAULT_NAMESPACE,
-} from '@shared/config/i18n'
-
-// 翻訳リソースをインポート
-// 注意: React Native では require() を使用
-const resources = {
-  ja: {
-    common: require('./locales/ja/common.json'),
-    auth: require('./locales/ja/auth.json'),
-  },
-  // 他の言語を追加する場合はここに追加
-}
-
-i18n.use(initReactI18next).init({
-  compatibilityJSON: 'v3', // React Native 用
-  resources,
-  lng: Localization.locale.split('-')[0], // デバイス言語
-  fallbackLng: FALLBACK_LANGUAGE,
-  supportedLngs: SUPPORTED_LANGUAGES,
-  defaultNS: DEFAULT_NAMESPACE,
-  interpolation: {
-    escapeValue: false,
-  },
-})
-
-export default i18n
-```
-
-### 7.2 翻訳ファイルの配置
-
-```
-apps/mobile/src/i18n/
-├── index.ts              # i18n 設定
-└── locales/
-    └── ja/
-        ├── common.json   # 共通翻訳
-        └── auth.json     # 認証画面翻訳
-```
-
-**注意:** Web版（`apps/client/src/locales/`）の翻訳ファイルをコピーするか、シンボリックリンクを使用して共有することを推奨します。
-
-### 7.3 使用例
-
-```tsx
-import { useTranslation } from 'react-i18next'
-import { View, Text, Button } from 'react-native'
-
-function WelcomeScreen() {
-  const { t, i18n } = useTranslation('common')
-
-  return (
-    <View className="flex-1 justify-center items-center">
-      <Text className="text-2xl font-bold">{t('welcome.title')}</Text>
-      <Text className="text-gray-600">{t('welcome.subtitle')}</Text>
-
-      {/* 言語切り替え */}
-      <Button
-        title={i18n.language === 'ja' ? 'English' : '日本語'}
-        onPress={() => i18n.changeLanguage(i18n.language === 'ja' ? 'en' : 'ja')}
-      />
-    </View>
-  )
-}
-```
-
----
-
-## 8. ナビゲーション設計
-
-### 8.1 Expo Router のレイアウト構造
+### 10.1 Expo Router のレイアウト構造
 
 ```tsx
 // apps/mobile/app/_layout.tsx
 import { Stack } from 'expo-router'
 import { QueryProvider } from '@/providers/QueryProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
-import '@/i18n' // i18n 初期化
 
 export default function RootLayout() {
   return (
@@ -884,7 +1102,7 @@ export default function RootLayout() {
       <AuthProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(onboarding)" />
         </Stack>
       </AuthProvider>
     </QueryProvider>
@@ -892,17 +1110,14 @@ export default function RootLayout() {
 }
 ```
 
-### 8.2 タブナビゲーション
+### 10.2 タブナビゲーション
 
 ```tsx
 // apps/mobile/app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import { Home, Settings, MessageSquare } from 'lucide-react-native'
 
 export default function TabLayout() {
-  const { t } = useTranslation('common')
-
   return (
     <Tabs
       screenOptions={{
@@ -913,21 +1128,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t('nav.home'),
+          title: 'ホーム',
           tabBarIcon: ({ color }) => <Home color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="contacts"
         options={{
-          title: t('nav.contacts'),
+          title: 'お問い合わせ',
           tabBarIcon: ({ color }) => <MessageSquare color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: t('nav.settings'),
+          title: '設定',
           tabBarIcon: ({ color }) => <Settings color={color} size={24} />,
         }}
       />
@@ -936,53 +1151,57 @@ export default function TabLayout() {
 }
 ```
 
-### 8.3 スタックナビゲーション（認証フロー）
+### 10.3 スタックナビゲーション（オンボーディングフロー）
 
 ```tsx
-// apps/mobile/app/(auth)/_layout.tsx
+// apps/mobile/app/(onboarding)/_layout.tsx
 import { Stack } from 'expo-router'
 
-export default function AuthLayout() {
+export default function OnboardingLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="magic-link" />
+      <Stack.Screen name="index" />
     </Stack>
   )
 }
 ```
 
-### 8.4 ディープリンク対応
+### 10.4 認証状態によるナビゲーション制御
+
+Device ID 認証はアプリ起動時に自動で行われるため、ログイン画面は不要です。
+代わりに、初回起動時のオンボーディングや利用規約同意画面を表示できます。
 
 ```tsx
-// apps/mobile/app/(auth)/magic-link.tsx
-import { useEffect } from 'react'
-import { View, Text, ActivityIndicator } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { authClient } from '@/services/auth-client'
+// apps/mobile/app/(onboarding)/index.tsx
+import { View, Text, Pressable } from 'react-native'
+import { useRouter } from 'expo-router'
+import { useAuth } from '@/providers/AuthProvider'
 
-export default function MagicLinkScreen() {
-  const { token } = useLocalSearchParams<{ token: string }>()
+export default function OnboardingScreen() {
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
-  useEffect(() => {
-    if (token) {
-      // マジックリンクトークンを検証
-      authClient.signIn
-        .magicLink({ token })
-        .then(() => {
-          router.replace('/(tabs)')
-        })
-        .catch(() => {
-          router.replace('/(auth)/login')
-        })
-    }
-  }, [token])
+  const handleComplete = async () => {
+    // 利用規約同意などの処理
+    router.replace('/(tabs)')
+  }
 
   return (
-    <View className="flex-1 justify-center items-center">
-      <ActivityIndicator size="large" />
-      <Text className="mt-4 text-gray-600">認証中...</Text>
+    <View className="flex-1 justify-center items-center px-6">
+      <Text className="text-3xl font-bold text-center mb-8">
+        ようこそ
+      </Text>
+      <Text className="text-lg text-center text-gray-600 mb-8">
+        アプリの説明文
+      </Text>
+      <Pressable
+        className="bg-blue-600 rounded-lg py-3 px-8"
+        onPress={handleComplete}
+      >
+        <Text className="text-white font-semibold">
+          はじめる
+        </Text>
+      </Pressable>
     </View>
   )
 }
@@ -990,9 +1209,9 @@ export default function MagicLinkScreen() {
 
 ---
 
-## 9. 状態管理
+## 11. 状態管理
 
-### 9.1 サーバー状態（TanStack Query）
+### 11.1 サーバー状態（TanStack Query）
 
 ```tsx
 // TanStack Query によるサーバー状態管理
@@ -1013,7 +1232,7 @@ const mutation = useMutation({
 })
 ```
 
-### 9.2 ローカル状態（Context API）
+### 11.2 ローカル状態（Context API）
 
 ```tsx
 // apps/mobile/src/providers/AppProvider.tsx
@@ -1066,11 +1285,11 @@ export function useApp() {
 
 ---
 
-## 10. 開発・ビルド・デプロイ（Expo サービスフル活用）
+## 12. 開発・ビルド・デプロイ（Expo サービスフル活用）
 
 このプロジェクトでは [expo.dev](https://expo.dev) のサービスをフル活用し、ローカル環境のセットアップを最小限に抑えつつ、効率的な開発・CI/CD パイプラインを構築します。
 
-### 10.1 Expo サービス一覧
+### 12.1 Expo サービス一覧
 
 | サービス | 用途 | 備考 |
 |---------|------|------|
@@ -1082,7 +1301,7 @@ export function useApp() {
 | **Expo Orbit** | シミュレーター管理 | デスクトップアプリ |
 | **Development Builds** | カスタム開発クライアント | ネイティブモジュール対応 |
 
-### 10.2 開発環境セットアップ
+### 12.2 開発環境セットアップ
 
 #### Expo Orbit（推奨）
 
@@ -1117,7 +1336,7 @@ cd apps/mobile
 eas init
 ```
 
-### 10.3 Development Build（カスタム開発クライアント）
+### 12.3 Development Build（カスタム開発クライアント）
 
 Development Build はネイティブモジュールを含むカスタム開発クライアントです。初回にビルドを作成し、その後は JS の変更のみ高速にイテレーションできます。
 
@@ -1145,13 +1364,13 @@ eas build --profile development --platform android
 
 ```bash
 # 開発サーバー起動（--dev-client フラグ）
-pnpm --filter @repo/mobile dev
+pnpm --filter @wishlist/mobile dev
 
 # または
 npx expo start --dev-client
 ```
 
-### 10.4 環境変数管理
+### 12.4 環境変数管理
 
 **app.config.ts（TypeScript 対応の動的設定）:**
 
@@ -1180,7 +1399,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 })
 ```
 
-### 10.5 EAS Build 設定
+### 12.5 EAS Build 設定
 
 ```json
 // apps/mobile/eas.json
@@ -1231,7 +1450,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 }
 ```
 
-### 10.6 EAS Update（OTA アップデート）
+### 12.6 EAS Update（OTA アップデート）
 
 EAS Update を使うと、ストア審査なしで JS バンドルを即時配信できます。
 
@@ -1282,7 +1501,7 @@ export function useAppUpdate() {
 }
 ```
 
-### 10.7 EAS Workflows（CI/CD）
+### 12.7 EAS Workflows（CI/CD）
 
 EAS Workflows を使うと、GitHub と連携した完全な CI/CD パイプラインを構築できます。
 
@@ -1403,7 +1622,7 @@ jobs:
 3. **Install GitHub App** をクリック
 4. リポジトリを選択して接続
 
-### 10.8 EAS Submit（ストア提出）
+### 12.8 EAS Submit（ストア提出）
 
 ```bash
 # App Store Connect に提出
@@ -1416,7 +1635,7 @@ eas submit --platform android --latest
 eas submit --platform ios --id <build-id>
 ```
 
-### 10.9 EAS Metadata（ストアメタデータ管理）
+### 12.9 EAS Metadata（ストアメタデータ管理）
 
 ストアのメタデータ（説明文、スクリーンショット等）をコードで管理します。
 
@@ -1456,7 +1675,7 @@ eas metadata:push
 eas metadata:pull
 ```
 
-### 10.10 package.json スクリプト（推奨）
+### 12.10 package.json スクリプト（推奨）
 
 ```json
 {
@@ -1487,7 +1706,7 @@ eas metadata:pull
 }
 ```
 
-### 10.11 開発フロー（推奨）
+### 12.11 開発フロー（推奨）
 
 ```
 1. 初回セットアップ
@@ -1510,9 +1729,9 @@ eas metadata:pull
 
 ---
 
-## 11. 制約事項と注意点
+## 13. 制約事項と注意点
 
-### 11.1 React Native Fetch API の制限
+### 13.1 React Native Fetch API の制限
 
 | 機能 | サポート状況 | 回避策 |
 |------|-------------|--------|
@@ -1520,7 +1739,7 @@ eas metadata:pull
 | Event Iterator | 制限あり | `expo/fetch` を使用 |
 | Streaming | 制限あり | `expo/fetch` で対応可能 |
 
-### 11.2 プラットフォーム固有の注意点
+### 13.2 プラットフォーム固有の注意点
 
 **iOS:**
 - `shadow-*` クラスは完全サポート
@@ -1532,7 +1751,7 @@ eas metadata:pull
 - 権限の明示的な要求が必要
 - BackHandler でバックボタン処理
 
-### 11.3 パフォーマンス最適化
+### 13.3 パフォーマンス最適化
 
 ```tsx
 // FlatList の最適化
@@ -1554,7 +1773,7 @@ eas metadata:pull
 />
 ```
 
-### 11.4 禁止事項
+### 13.4 禁止事項
 
 Web版（FRONTEND.md）と同様に以下は禁止:
 
@@ -1563,6 +1782,13 @@ Web版（FRONTEND.md）と同様に以下は禁止:
 - **Redux/Zustand**: Context API + TanStack Query を使用
 - **CSS-in-JS**: NativeWind (Tailwind) を使用
 - **インラインスタイル**: className のみ使用
+
+**モバイル固有の禁止事項:**
+
+- **AsyncStorage へのアプリデータ保存**: サーバーが SSOT のため禁止（認証情報は SecureStore を使用）
+- **MMKV へのアプリデータ保存**: 同上
+- **ローカルデータベース（SQLite等）**: オフラインファーストは将来対応
+- **バージョンなし API（`/api/user/rpc`）**: 必ず `/api/user/v1/rpc` を使用
 
 ---
 
@@ -1593,7 +1819,6 @@ Web版（FRONTEND.md）と同様に以下は禁止:
 - [React Native Documentation](https://reactnative.dev/)
 - [Expo Router Documentation](https://docs.expo.dev/router/introduction/)
 - [oRPC React Native Adapter](https://orpc.dev/docs/adapters/react-native)
-- [Better-Auth Expo Integration](https://www.better-auth.com/docs/integrations/expo)
 - [NativeWind Documentation](https://www.nativewind.dev/)
 - [TanStack Query](https://tanstack.com/query/latest)
 

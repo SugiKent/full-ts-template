@@ -9,11 +9,11 @@
 ```
 project/
 ├── apps/           # アプリケーション
-│   ├── client/     # @repo/client - React フロントエンド
-│   ├── server/     # @repo/server - Fastify バックエンド
-│   └── worker/     # @repo/worker - ジョブワーカー
+│   ├── client/     # @wishlist/client - React フロントエンド
+│   ├── server/     # @wishlist/server - Fastify バックエンド
+│   └── worker/     # @wishlist/worker - ジョブワーカー
 ├── packages/       # 共有パッケージ
-│   ├── shared/     # @repo/shared - 共有型・スキーマ
+│   ├── shared/     # @wishlist/shared - 共有型・スキーマ
 │   └── typescript-config/  # TypeScript設定
 └── docs/           # 技術ドキュメント
 ```

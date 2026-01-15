@@ -7,7 +7,7 @@
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { RouterClient } from '@orpc/server'
-import type { AdminRouter } from '@repo/server/procedures/admin'
+import type { AdminRouter } from '@wishlist/server/procedures/admin'
 
 /**
  * oRPC Linkの作成

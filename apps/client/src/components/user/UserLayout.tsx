@@ -36,7 +36,6 @@ export function UserLayout({
 
   const defaultNavItems: NavItem[] = [
     { path: 'home', label: t('navigation.home'), route: '/user/home' },
-    { path: 'contact', label: t('navigation.contact'), route: '/user/contact' },
   ]
 
   const navItemsToUse = navItems ?? defaultNavItems

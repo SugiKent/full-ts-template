@@ -25,8 +25,7 @@
   "you": "You",
   "operator": "Support",
   "navigation": {
-    "home": "Home",
-    "contact": "Contact"
+    "home": "Home"
   },
   "userIcon": "User icon",
   "role": {
@@ -40,16 +39,5 @@
     "feature1": "Feature 1",
     "feature2": "Feature 2",
     "feature3": "Feature 3"
-  },
-  "contact": {
-    "title": "Contact",
-    "description": "Feel free to contact us with any questions or concerns",
-    "new": "New Contact",
-    "history": "Contact History",
-    "subjectPlaceholder": "Enter the subject of your inquiry",
-    "contentPlaceholder": "Please describe your inquiry in detail",
-    "messagePlaceholder": "Enter message...",
-    "threadTitle": "Contact Details",
-    "threadDescription": "View contact details"
   }
 }

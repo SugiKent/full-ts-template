@@ -19,13 +19,9 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 
 
-# 現在このProjectはとあるProjectのコピーとなっていますが、これから元のプロジェクト固有の情報を削除していき、洗練させることで今後のプロジェクトのボイラーテンプレートにしていきます
-
-
-
 # AI エージェント活用ガイド
 
-このドキュメントでは、{TODO: サービス概要を書く} AI エージェントを効果的に活用する方法を説明します。
+このドキュメントでは、**My Wishlist**（AI駆動のウィッシュリスト管理サービス）の開発においてAIエージェントを効果的に活用する方法を説明します。
 
 ## ⚠️ 重要: 設計ドキュメントの参照
 
@@ -38,17 +34,51 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 AI エージェントを使用することで、開発タスクの効率化と品質向上を実現します。**ただし、必ず設計ドキュメントに従い、独自の判断で設計変更を行わないでください。**
 
+## アプリケーション構成
+
+| アプリ | パス | 対象ユーザー | 説明 |
+|--------|------|-------------|------|
+| **管理画面** | `apps/client` | システム管理者 | Web ベースの管理画面フロントエンド |
+| **モバイルアプリ** | `apps/mobile` | エンドユーザー | Expo + React Native のモバイルアプリ |
+| **API サーバー** | `apps/server` | - | Fastify + oRPC の API サーバー |
+| **ジョブワーカー** | `apps/worker` | - | バックグラウンドジョブ処理 |
+
+## 認証方式
+
+| アプリ | 認証方式 | 参照ドキュメント |
+|--------|---------|-----------------|
+| **管理画面** (`apps/client`) | Better-Auth（Email/パスワード、マジックリンク） | `@docs/AUTH.md` |
+| **モバイルアプリ** (`apps/mobile`) | Device ID ベースの匿名認証 | 下記参照 |
+
+### モバイルアプリの認証（Device ID 認証）
+
+モバイルアプリは **better-auth に依存しない独自の認証システム** を使用しています。
+
+**サーバー側**:
+- `apps/server/src/procedures/user/device-auth.ts` - デバイス認証 oRPC Procedures
+- `apps/server/src/repositories/device.repository.ts` - Device Repository
+
+**クライアント側**:
+- `apps/mobile/src/providers/AuthProvider.tsx` - 認証プロバイダー
+- `apps/mobile/src/services/device.service.ts` - デバイスサービス
+
+**認証フロー**:
+1. アプリ起動時に Device ID を取得または生成（UUID v4）
+2. Device ID をサーバーに登録してアクセストークンを取得
+3. トークンは SecureStore に保存（90日有効）
+4. トークン期限切れ時は自動更新
+
 ## システムアーキテクチャ
 
 **必須参照**: 以下のドキュメントを用途に応じて参照してください
 
 - **全体構成**: `@docs/ARCHITECTURE.md` - システム全体のアーキテクチャと技術スタック
 - **バックエンド開発**: `@docs/BACKEND.md` - Fastify、oRPC、Repository層の実装規約
-- **フロントエンド開発**: `@docs/FRONTEND.md` - React 19、Tailwind CSS、コンポーネント設計
-- **認証実装**: `@docs/AUTH.md` - 認証の設計
+- **フロントエンド開発**: `@docs/FRONTEND.md` - React 19、Tailwind CSS、コンポーネント設計（管理画面）
+- **認証実装**: `@docs/AUTH.md` - 管理画面の認証設計（Better-Auth）
 - **データベース設計**: `@docs/DATABASE.md` - Prismaスキーマ、拡張パターン、Repository層
 - **テスト設計**: `@docs/TEST.md` - ユニットテスト、統合テスト、E2Eテストのベストプラクティス
-- **モバイルアプリ開発**: `@docs/MOBILE_APP.md` - Expo + React Native開発規約
+- **モバイルアプリ開発**: `@docs/MOBILE_APP.md` - Expo + React Native開発規約（エンドユーザー向け）
 
 ## ビジネス要件/サービス設計
 
@@ -149,6 +179,23 @@ pnpm run test:e2e
 7. **PROJECT.mdからの記述削除** - OpenSpec は実装済み箇所の仕様書を更新するため, 実装が終えた部分については PROJECT.md の記載から削除して下さい.
 8. **堅牢で保守性の高いコードを書く** - モジュール化、再利用性、テスト容易性を考慮. 例えばただの string ではなく, interface にまとめたほうが良い場合などを発見し実装すること。
 9. **型に厳密であること** - TypeScriptの型システムを最大限に活用
+
+## API バージョニング（モバイルアプリ向け）
+
+モバイルアプリはユーザーがアップデートしないケースが多いため、サーバー API の後方互換性を維持する必要があります。
+
+### 運用ルール
+
+| ルール | 説明 |
+|--------|------|
+| **v1 は破壊的変更禁止** | フィールド追加は OK、削除/変更は NG |
+
+### パス構成
+
+```
+/api/user/v1/rpc/*  ← 現行バージョン（破壊的変更禁止）
+/api/user/v2/rpc/*  ← 新バージョン（必要に応じて追加）
+```
 
 ## 注意事項
 

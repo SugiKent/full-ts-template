@@ -1,8 +1,9 @@
 /**
  * Redis接続設定
  *
- * bee-queue用のRedis設定を提供
+ * bee-queue用のRedis設定とioredisクライアントを提供
  */
+import Redis from 'ioredis'
 
 /** Redis接続設定 */
 export interface RedisConfig {
@@ -37,3 +38,36 @@ export function getRedisConfig(): RedisConfig {
 
 /** デフォルトのRedis設定 */
 export const redisConfig = getRedisConfig()
+
+// ========================================
+// Redis クライアント（ioredis）
+// ========================================
+
+/** シングルトン Redis クライアント */
+let redisClient: Redis | null = null
+
+/**
+ * Redis クライアントを取得（シングルトン）
+ */
+export function getRedisClient(): Redis {
+  if (!redisClient) {
+    redisClient = new Redis({
+      host: redisConfig.host,
+      port: redisConfig.port,
+      ...(redisConfig.password && { password: redisConfig.password }),
+      ...(redisConfig.db !== undefined && { db: redisConfig.db }),
+      lazyConnect: true,
+    })
+  }
+  return redisClient
+}
+
+/**
+ * Redis クライアントを閉じる
+ */
+export async function closeRedisClient(): Promise<void> {
+  if (redisClient) {
+    await redisClient.quit()
+    redisClient = null
+  }
+}

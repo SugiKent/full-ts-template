@@ -1,7 +1,7 @@
 {
-  "name": "full-ts-with-ai-template",
+  "name": "wishlist-ai",
   "version": "1.0.0",
-  "description": "Full-Stack TypeScript Application Template with AI Development Support",
+  "description": "AI駆動のウィッシュリスト管理サービス",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,13 +11,13 @@
   "packageManager": "pnpm@10.22.0",
   "scripts": {
     "dev": "turbo run dev",
-    "dev:client": "turbo run dev --filter=@repo/client",
-    "dev:server": "turbo run dev --filter=@repo/server",
-    "dev:worker": "turbo run dev --filter=@repo/worker",
-    "dev:mobile": "turbo run dev --filter=@repo/mobile",
-    "dev:api+mobile": "turbo run dev --filter=@repo/server --filter=@repo/mobile",
+    "dev:client": "turbo run dev --filter=@wishlist/client",
+    "dev:server": "turbo run dev --filter=@wishlist/server",
+    "dev:worker": "turbo run dev --filter=@wishlist/worker",
+    "dev:mobile": "turbo run dev --filter=@wishlist/mobile",
+    "dev:api+mobile": "turbo run dev --filter=@wishlist/server --filter=@wishlist/mobile",
     "build": "turbo run build",
-    "start": "pnpm --filter @repo/server start",
+    "start": "pnpm --filter @wishlist/server start",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint && biome check --write prisma customLinter && tsx customLinter/index.ts",
     "format": "turbo run format && biome format --write prisma customLinter",
@@ -30,13 +30,17 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "db:reset": "./scripts/db-reset.sh",
     "db:seed": "tsx prisma/seed.ts",
     "db:testData": "tsx prisma/testData.ts",
     "db:studio": "prisma studio",
     "generate:og": "tsx og-images/generate.ts",
+    "generate:store": "tsx og-images/generate-store-images.ts",
     "knip": "knip",
     "knip:fix": "knip --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -62,5 +66,10 @@
     "turbo": "^2.5.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "expo": "~54.0.30",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

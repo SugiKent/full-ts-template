@@ -32,12 +32,28 @@ export interface JobPayload {
 /** テストジョブのキュー名 */
 export const TEST_JOB_QUEUE = 'test-job-queue'
 
+/** ステップ候補生成ジョブのキュー名 */
+export const STEP_SUGGESTION_QUEUE = 'step-suggestion-queue'
+
 // ========================================
 // キュー管理
 // ========================================
 
 /** キューのマップ */
 const queues = new Map<string, Queue<JobPayload>>()
+
+/**
+ * bee-queue 用の Redis 設定を取得
+ * undefined なプロパティを除外して exactOptionalPropertyTypes に対応
+ */
+function getBeeQueueRedisConfig() {
+  return {
+    host: redisConfig.host,
+    port: redisConfig.port,
+    ...(redisConfig.password && { password: redisConfig.password }),
+    ...(redisConfig.db !== undefined && { db: redisConfig.db }),
+  }
+}
 
 /**
  * ワーカー用キューを作成または取得
@@ -47,7 +63,7 @@ export function getWorkerQueue(queueName: string): Queue<JobPayload> {
   if (existing) return existing
 
   const queue = new Queue<JobPayload>(queueName, {
-    redis: redisConfig,
+    redis: getBeeQueueRedisConfig(),
     isWorker: true,
     removeOnSuccess: true,
     removeOnFailure: false,
@@ -88,7 +104,7 @@ export function getProducerQueue(queueName: string): Queue<JobPayload> {
   if (existing) return existing
 
   const queue = new Queue<JobPayload>(queueName, {
-    redis: redisConfig,
+    redis: getBeeQueueRedisConfig(),
     isWorker: false,
   })
 
